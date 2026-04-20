@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <defs>
+    <filter id="puzzle-shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+    
+    <symbol id="puzzle-piece" viewBox="0 0 60 60">
+      <path d="M 10,10 L 50,10 L 50,25 Q 55,25 55,30 Q 55,35 50,35 L 50,50 L 35,50 Q 35,55 30,55 Q 25,55 25,50 L 10,50 Z"/>
+    </symbol>
+  </defs>
+</svg>

@@ -1,0 +1,499 @@
+/**
+ * Keren Shutafut Interactive Map
+ * Handles SVG map, markers, and filtering
+ */
+
+(function() {
+    'use strict';
+    
+    let allPins = [];
+    let activeFilters = {
+        geographic: null,
+        cycle: null,
+        audience: []
+    };
+    
+    // Initialize map when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+        loadPins();
+    });
+    
+    /**
+     * Initialize SVG map of Israel
+     * Works with custom SVG provided by designer
+     */
+    function initMap() {
+        const mapContainer = document.getElementById('map');
+        
+        // Load custom SVG map
+        loadSVGMap().then(() => {
+            setupRegionInteractivity();
+        });
+    }
+    
+    /**
+     * Load SVG map from external file or inline
+     */
+    async function loadSVGMap() {
+        const mapContainer = document.getElementById('map');
+        
+        // Placeholder SVG (replace with designer's actual SVG)
+        mapContainer.innerHTML = `
+            <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg" id="israel-map">
+                <!-- North Region -->
+                <path id="north-region" class="clickable-region" data-region="צפון"
+                    d="M150,50 L250,50 L270,100 L250,150 L200,170 L150,150 L130,100 Z"/>
+                
+                <!-- Center Region -->
+                <path id="center-region" class="clickable-region" data-region="מרכז"
+                    d="M130,100 L150,150 L200,170 L250,150 L270,200 L230,250 L180,250 L130,200 Z"/>
+                
+                <!-- Jerusalem Region -->
+                <path id="jerusalem-region" class="clickable-region" data-region="ירושלים"
+                    d="M180,250 L230,250 L240,290 L200,310 L160,290 Z"/>
+                
+                <!-- South Region -->
+                <path id="south-region" class="clickable-region" data-region="דרום"
+                    d="M160,290 L200,310 L240,290 L250,400 L200,550 L150,400 Z"/>
+                
+                <!-- Pin count badges will be added here -->
+                <g id="pin-markers"></g>
+            </svg>
+        `;
+    }
+    
+    /**
+     * Setup interactivity for all clickable regions
+     */
+    function setupRegionInteractivity() {
+        const regions = document.querySelectorAll('.clickable-region[data-region]');
+        
+        regions.forEach(region => {
+            const regionName = region.dataset.region;
+            
+            // Click handler
+            region.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Toggle geographic filter
+                const wasActive = activeFilters.geographic === regionName;
+                
+                // Clear other regions
+                regions.forEach(r => r.classList.remove('selected'));
+                
+                // Clear filter button
+                const geoButtons = document.querySelectorAll('#geographic-filter .filter-btn');
+                geoButtons.forEach(btn => btn.classList.remove('active'));
+                
+                if (!wasActive) {
+                    // Select this region
+                    this.classList.add('selected');
+                    activeFilters.geographic = regionName;
+                    
+                    // Also activate the corresponding filter button
+                    geoButtons.forEach(btn => {
+                        if (btn.textContent.trim() === regionName) {
+                            btn.classList.add('active');
+                        }
+                    });
+                } else {
+                    // Deselect
+                    activeFilters.geographic = null;
+                }
+                
+                updateApplyButtonState();
+            });
+            
+            // Hover effects
+            region.addEventListener('mouseenter', function() {
+                this.classList.add('hovered');
+            });
+            
+            region.addEventListener('mouseleave', function() {
+                this.classList.remove('hovered');
+            });
+        });
+    }
+    
+    /**
+     * Fetch all pins from WordPress REST API
+     */
+    async function loadPins() {
+        try {
+            const response = await fetch(window.kerenShutafutMapData.restUrl);
+            const data = await response.json();
+            
+            allPins = data;
+            
+            // Build filter UI
+            buildFilters();
+            
+            // Display all pins initially
+            displayPins(allPins);
+            
+        } catch (error) {
+            console.error('Error loading pins:', error);
+            alert('שגיאה בטעינת הפרויקטים');
+        }
+    }
+    
+    /**
+     * Build filter buttons/checkboxes from pin data
+     */
+    function buildFilters() {
+        // Get unique values for each taxonomy
+        const geoRegions = getUniqueTaxonomy('geographic_region');
+        const cycles = getUniqueTaxonomy('activity_cycle');
+        const audiences = getUniqueTaxonomy('target_audience');
+        
+        // Build geographic filter buttons
+        const geoContainer = document.getElementById('geographic-filter');
+        geoRegions.forEach(region => {
+            const btn = createFilterButton(region.name, () => {
+                toggleFilter('geographic', region.name);
+            });
+            geoContainer.appendChild(btn);
+        });
+        
+        // Build cycle filter buttons
+        const cycleContainer = document.getElementById('cycle-filter');
+        cycles.forEach(cycle => {
+            const btn = createFilterButton(cycle.name, () => {
+                toggleFilter('cycle', cycle.name);
+            });
+            cycleContainer.appendChild(btn);
+        });
+        
+        // Build audience checkboxes
+        const audienceContainer = document.getElementById('audience-filter');
+        audiences.forEach(audience => {
+            const checkbox = createFilterCheckbox(audience.name, (checked) => {
+                toggleAudienceFilter(audience.name, checked);
+            });
+            audienceContainer.appendChild(checkbox);
+        });
+        
+        // Reset button
+        document.getElementById('reset-filters').addEventListener('click', resetFilters);
+        
+        // Apply button
+        document.getElementById('apply-filters').addEventListener('click', applyFilters);
+    }
+    
+    /**
+     * Get unique taxonomy terms from all pins
+     */
+    function getUniqueTaxonomy(taxonomy) {
+        const termsMap = new Map();
+        
+        allPins.forEach(pin => {
+            if (pin.taxonomies && pin.taxonomies[taxonomy]) {
+                pin.taxonomies[taxonomy].forEach(term => {
+                    // Skip numbered terms (mistakes)
+                    if (!/^\d+$/.test(term.name)) {
+                        termsMap.set(term.term_id, term);
+                    }
+                });
+            }
+        });
+        
+        const terms = Array.from(termsMap.values());
+        
+        // Custom sort for activity_cycle to maintain order א -> ו
+        if (taxonomy === 'activity_cycle') {
+            const cycleOrder = ['מחזור א', 'מחזור ב', 'מחזור ג', 'מחזור ד', 'מחזור ה', 'מחזור ו'];
+            terms.sort((a, b) => {
+                const aIndex = cycleOrder.indexOf(a.name);
+                const bIndex = cycleOrder.indexOf(b.name);
+                if (aIndex === -1) return 1;
+                if (bIndex === -1) return -1;
+                return aIndex - bIndex;
+            });
+        }
+        
+        return terms;
+    }
+    
+    /**
+     * Create filter button
+     */
+    function createFilterButton(label, onClick) {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn';
+        btn.textContent = label;
+        btn.addEventListener('click', function() {
+            // Toggle active state on this button's siblings
+            const siblings = Array.from(this.parentElement.children);
+            siblings.forEach(sibling => {
+                if (sibling !== this && sibling.classList.contains('filter-btn')) {
+                    sibling.classList.remove('active');
+                }
+            });
+            this.classList.toggle('active');
+            onClick();
+        });
+        return btn;
+    }
+    
+    /**
+     * Create filter checkbox
+     */
+    function createFilterCheckbox(label, onChange) {
+        const wrapper = document.createElement('label');
+        wrapper.className = 'filter-checkbox';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.addEventListener('change', (e) => onChange(e.target.checked));
+        
+        const span = document.createElement('span');
+        span.textContent = label;
+        
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(span);
+        
+        return wrapper;
+    }
+    
+    /**
+     * Toggle single-select filter (doesn't auto-apply)
+     */
+    function toggleFilter(type, value) {
+        if (activeFilters[type] === value) {
+            activeFilters[type] = null;
+        } else {
+            activeFilters[type] = value;
+        }
+        
+        // Sync with map if geographic
+        if (type === 'geographic') {
+            const regions = document.querySelectorAll('.clickable-region');
+            regions.forEach(r => {
+                r.classList.remove('selected');
+                if (r.dataset.region === value) {
+                    r.classList.add('selected');
+                }
+            });
+        }
+        
+        updateApplyButtonState();
+    }
+    
+    /**
+     * Toggle multi-select audience filter (doesn't auto-apply)
+     */
+    function toggleAudienceFilter(value, checked) {
+        if (checked) {
+            if (!activeFilters.audience.includes(value)) {
+                activeFilters.audience.push(value);
+            }
+        } else {
+            activeFilters.audience = activeFilters.audience.filter(a => a !== value);
+        }
+        updateApplyButtonState();
+    }
+    
+    /**
+     * Update apply button visual state
+     */
+    function updateApplyButtonState() {
+        const hasFilters = activeFilters.geographic || 
+                          activeFilters.cycle || 
+                          activeFilters.audience.length > 0;
+        
+        const btn = document.getElementById('apply-filters');
+        if (hasFilters) {
+            btn.classList.add('has-changes');
+            btn.textContent = 'הצג תוצאות';
+        } else {
+            btn.classList.remove('has-changes');
+            btn.textContent = 'בחר פילטרים';
+        }
+    }
+    
+    /**
+     * Reset all filters
+     */
+    function resetFilters() {
+        activeFilters = {
+            geographic: null,
+            cycle: null,
+            audience: []
+        };
+        
+        // Clear UI
+        document.querySelectorAll('.filter-btn.active').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.clickable-region.selected').forEach(r => r.classList.remove('selected'));
+        
+        applyFilters();
+    }
+    
+    /**
+     * Apply filters and update map
+     */
+    function applyFilters() {
+        // Show loading state
+        const btn = document.getElementById('apply-filters');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'טוען...';
+        
+        // Small delay to show loading state (feels more responsive)
+        setTimeout(() => {
+            let filteredPins = allPins;
+            
+            // Filter by geographic region
+            if (activeFilters.geographic) {
+                filteredPins = filteredPins.filter(pin => 
+                    pin.taxonomies.geographic_region?.some(t => t.name === activeFilters.geographic)
+                );
+            }
+            
+            // Filter by cycle
+            if (activeFilters.cycle) {
+                filteredPins = filteredPins.filter(pin => 
+                    pin.taxonomies.activity_cycle?.some(t => t.name === activeFilters.cycle)
+                );
+            }
+            
+            // Filter by audiences (must have ALL selected)
+            if (activeFilters.audience.length > 0) {
+                filteredPins = filteredPins.filter(pin => {
+                    const pinAudiences = pin.taxonomies.target_audience?.map(t => t.name) || [];
+                    return activeFilters.audience.every(a => pinAudiences.includes(a));
+                });
+            }
+            
+            displayPins(filteredPins);
+            updateResultsCount(filteredPins.length);
+            updateApplyButtonState();
+            
+            // Reset button state
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }, 200);
+    }
+    
+    /**
+     * Display pins on map - show count per region
+     */
+    function displayPins(pins) {
+        // Group pins by region
+        const pinsByRegion = {
+            'צפון': [],
+            'מרכז': [],
+            'ירושלים': [],
+            'דרום': []
+        };
+        
+        pins.forEach(pin => {
+            const regions = pin.taxonomies.geographic_region || [];
+            regions.forEach(region => {
+                if (pinsByRegion[region.name]) {
+                    pinsByRegion[region.name].push(pin);
+                }
+            });
+        });
+        
+        // Clear old badges
+        const markersGroup = document.getElementById('pin-markers');
+        if (markersGroup) {
+            markersGroup.innerHTML = '';
+        
+            // Add count badges to regions
+            Object.keys(pinsByRegion).forEach(regionName => {
+                const count = pinsByRegion[regionName].length;
+                const region = document.querySelector(`[data-region="${regionName}"]`);
+                
+                if (region && count > 0) {
+                    const bbox = region.getBBox();
+                    const centerX = bbox.x + bbox.width / 2;
+                    const centerY = bbox.y + bbox.height / 2;
+                    
+                    const badge = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    badge.classList.add('pin-count-badge');
+                    badge.dataset.region = regionName;
+                    badge.innerHTML = `
+                        <circle cx="${centerX}" cy="${centerY + 20}" r="18" fill="#4a90e2" stroke="white" stroke-width="2"/>
+                        <text x="${centerX}" y="${centerY + 25}" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${count}</text>
+                    `;
+                    
+                    // Add click handler to badge
+                    badge.style.cursor = 'pointer';
+                    badge.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        showPinListModal(regionName, pinsByRegion[regionName]);
+                    });
+                    
+                    // Add hover title
+                    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                    title.textContent = `${count} פרויקטים ב${regionName} - לחץ לפרטים`;
+                    badge.appendChild(title);
+                    
+                    markersGroup.appendChild(badge);
+                }
+            });
+        }
+    }
+    
+    /**
+     * Update results counter
+     */
+    function updateResultsCount(count) {
+        document.getElementById('results-count').textContent = count;
+    }
+    
+    /**
+     * Show modal with list of pins in a region
+     */
+    function showPinListModal(regionName, pins) {
+        // Create modal if doesn't exist
+        let modal = document.getElementById('pin-list-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'pin-list-modal';
+            modal.className = 'pin-modal';
+            modal.innerHTML = `
+                <div class="pin-modal-content">
+                    <div class="pin-modal-header">
+                        <h3 id="modal-title"></h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="pin-modal-body" id="modal-pins-list"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Close handlers
+            modal.querySelector('.modal-close').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+        
+        // Populate modal
+        document.getElementById('modal-title').textContent = `פרויקטים ב${regionName} (${pins.length})`;
+        
+        const listHtml = pins.map(pin => `
+            <div class="modal-pin-item">
+                <h4>${pin.title}</h4>
+                <p>${pin.content ? pin.content.substring(0, 150) + '...' : ''}</p>
+                <div class="modal-pin-links">
+                    <a href="?p=${pin.id}" class="view-pin-link">צפה בפרטים</a>
+                    ${pin.project_link ? `<a href="${pin.project_link}" target="_blank" class="external-pin-link">אתר הפרויקט</a>` : ''}
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('modal-pins-list').innerHTML = listHtml;
+        modal.style.display = 'flex';
+    }
+    
+})();

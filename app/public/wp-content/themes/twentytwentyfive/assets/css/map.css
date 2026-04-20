@@ -1,0 +1,278 @@
+/**
+ * Keren Shutafut Interactive Map Styles
+ * Color Palette from Ohad's Design
+ */
+
+:root {
+  /* Primary Colors */
+  --color-beige: #d4c4b0;
+  --color-rust: #a0594d;
+  --color-sage: #8b9f8f;
+  --color-teal: #7fa9a3;
+  --color-dark-teal: #3d5956;
+  
+  /* Map Region Gradients */
+  --color-north-dark: #3d5956;
+  --color-north-light: #8b9f8f;
+  --color-south-beige: #d4c4b0;
+  --color-south-pink: #d8b5a8;
+  
+  /* Puzzle Piece Colors */
+  --color-puzzle-rust: #a0594d;
+  --color-puzzle-gray: #8f8481;
+  
+  /* UI Background */
+  --color-bg-cream: #f5ede4;
+}
+
+/* Map Wrapper */
+.map-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  direction: rtl;
+}
+
+.map-header h1 {
+  color: var(--color-dark-teal);
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+/* Two-column layout: map left, sidebar right */
+.map-content-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.map-content-layout #map-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.map-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+/* Filters */
+.map-filters {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 20px;
+}
+
+.filter-group {
+  margin-bottom: 20px;
+}
+
+.filter-group label {
+  display: block;
+  font-weight: bold;
+  color: var(--color-dark-teal);
+  margin-bottom: 10px;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  background: var(--color-bg-cream);
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: inherit;
+}
+
+.filter-btn:hover {
+  background: var(--color-sage);
+  color: white;
+}
+
+.filter-btn.active {
+  background: var(--color-rust);
+  color: white;
+  border-color: var(--color-dark-teal);
+}
+
+.filter-btn .count {
+  background: white;
+  color: var(--color-dark-teal);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.filter-checkboxes label {
+  display: block;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.filter-checkboxes input[type="checkbox"] {
+  margin-left: 8px;
+}
+
+/* Map Container */
+#map-container {
+  position: relative;
+  background: var(--color-bg-cream);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+#israel-map {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.clickable-region {
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.clickable-region:hover {
+  opacity: 0.8;
+}
+
+/* Puzzle Markers */
+#puzzle-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.puzzle-marker {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  pointer-events: all;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.puzzle-marker:hover {
+  transform: scale(1.1);
+}
+
+.puzzle-icon {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.marker-count {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: var(--color-rust);
+  font-size: 14px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 30px;
+  position: relative;
+  direction: rtl;
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 32px;
+  cursor: pointer;
+  color: var(--color-dark-teal);
+}
+
+#modal-title {
+  color: var(--color-rust);
+  margin-bottom: 20px;
+}
+
+.pin-item {
+  border-bottom: 1px solid var(--color-bg-cream);
+  padding: 15px 0;
+}
+
+.pin-item h3 {
+  color: var(--color-dark-teal);
+  margin-bottom: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .map-wrapper {
+    padding: 10px;
+  }
+
+  .map-content-layout {
+    flex-direction: column;
+  }
+
+  .map-sidebar {
+    width: 100%;
+  }
+
+  .map-filters {
+    position: static;
+  }
+
+  .filter-buttons {
+    flex-direction: column;
+  }
+
+  .filter-btn {
+    width: 100%;
+  }
+}
