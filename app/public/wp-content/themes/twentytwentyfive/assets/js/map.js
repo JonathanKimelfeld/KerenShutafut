@@ -30,9 +30,7 @@
         }
         
         // Load custom SVG map
-        loadSVGMap().then(() => {
-            setupRegionInteractivity();
-        });
+        loadSVGMap();
     }
     
 
@@ -54,13 +52,17 @@
      * Sync map region selection with filter buttons
      */
     function syncMapRegionSelection(regionName) {
-        const regions = document.querySelectorAll('.clickable-region');
-        regions.forEach(r => {
-            r.classList.remove('selected');
-            if (r.dataset.region === regionName) {
-                r.classList.add('selected');
-            }
-        });
+        document.querySelectorAll('.clickable-region').forEach(r => r.classList.remove('selected'));
+        document.querySelectorAll('.region-label').forEach(l => l.classList.remove('visible'));
+
+        if (regionName) {
+            document.querySelectorAll('.clickable-region').forEach(r => {
+                if (r.dataset.region === regionName) r.classList.add('selected');
+            });
+            document.querySelectorAll('.region-label').forEach(l => {
+                if (l.dataset.region === regionName) l.classList.add('visible');
+            });
+        }
     }
 
     
@@ -76,40 +78,29 @@
                 e.stopPropagation();
                 
                 const wasActive = activeFilters.geographic === regionName;
-                
-                // Clear other regions
-                regions.forEach(r => r.classList.remove('selected'));
-                
+
                 // Clear geographic filter buttons
                 const geoButtons = document.querySelectorAll('[data-filter-type="geographic_region"] .filter-btn');
                 geoButtons.forEach(btn => btn.classList.remove('active'));
-                
+
                 if (!wasActive) {
-                    this.classList.add('selected');
                     activeFilters.geographic = regionName;
-                    
+
                     // Activate corresponding filter button
                     geoButtons.forEach(btn => {
-                        if (btn.dataset.term === regionName) {
-                            btn.classList.add('active');
-                        }
+                        if (btn.dataset.term === regionName) btn.classList.add('active');
                     });
                 } else {
                     activeFilters.geographic = null;
                 }
-                
-                // Auto-apply filters (no apply button needed)
+
+                syncMapRegionSelection(activeFilters.geographic);
                 applyFilters();
             });
             
-            // Hover effects
+            // Hover cursor (visual hover handled by CSS)
             region.addEventListener('mouseenter', function() {
-                this.style.opacity = '0.9';
                 this.style.cursor = 'pointer';
-            });
-            
-            region.addEventListener('mouseleave', function() {
-                this.style.opacity = '0.7';
             });
         });
     }
@@ -171,7 +162,7 @@
                 }
                 
                 // Sync with map regions
-                syncMapRegionSelection(term);
+                syncMapRegionSelection(activeFilters.geographic);
                 applyFilters();
             });
         });
@@ -212,19 +203,6 @@
                 
                 applyFilters();
             });
-        });
-    }
-    
-    /**
-     * Sync map region selection with filter buttons
-     */
-    function syncMapRegionSelection(regionName) {
-        const regions = document.querySelectorAll('.clickable-region');
-        regions.forEach(r => {
-            r.classList.remove('selected');
-            if (r.dataset.region === regionName) {
-                r.classList.add('selected');
-            }
         });
     }
     
@@ -328,7 +306,7 @@
             const count = pinsByRegion[regionName].length;
             const region = document.querySelector(`[data-region="${regionName}"]`);
             
-            if (region && count > 0) {
+            if (region && count > 0 && activeFilters.geographic !== regionName) {
                 const bbox = region.getBBox();
                 const centerX = bbox.x + bbox.width / 2;
                 const centerY = bbox.y + bbox.height / 2;
@@ -348,10 +326,25 @@
                           fill="var(--color-rust)" font-size="16" font-weight="bold">${count}</text>
                 `;
                 
-                // Click handler to show pin list
+                // Click handler — select region (same as clicking the region directly)
                 badge.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    showPinListModal(regionName, pinsByRegion[regionName]);
+
+                    const wasActive = activeFilters.geographic === regionName;
+                    const geoButtons = document.querySelectorAll('[data-filter-type="geographic_region"] .filter-btn');
+                    geoButtons.forEach(btn => btn.classList.remove('active'));
+
+                    if (!wasActive) {
+                        activeFilters.geographic = regionName;
+                        geoButtons.forEach(btn => {
+                            if (btn.dataset.term === regionName) btn.classList.add('active');
+                        });
+                    } else {
+                        activeFilters.geographic = null;
+                    }
+
+                    syncMapRegionSelection(activeFilters.geographic);
+                    applyFilters();
                 });
                 
                 // Hover title

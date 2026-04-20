@@ -52,7 +52,7 @@
 }
 
 .map-sidebar {
-  width: 280px;
+  width: 240px;
   flex-shrink: 0;
 }
 
@@ -60,26 +60,27 @@
 .map-filters {
   background: white;
   border-radius: 8px;
-  padding: 20px;
+  padding: 14px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   position: sticky;
   top: 20px;
 }
 
 .filter-group {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .filter-group label {
   display: block;
   font-weight: bold;
   color: var(--color-dark-teal);
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+  font-size: 14px;
 }
 
 .filter-buttons {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -87,10 +88,11 @@
   background: var(--color-bg-cream);
   border: 2px solid transparent;
   border-radius: 6px;
-  padding: 8px 16px;
+  padding: 5px 10px;
   cursor: pointer;
   transition: all 0.3s;
   font-family: inherit;
+  font-size: 13px;
 }
 
 .filter-btn:hover {
@@ -116,12 +118,13 @@
 
 .filter-checkboxes label {
   display: block;
-  padding: 8px;
+  padding: 3px 6px;
   cursor: pointer;
+  font-size: 12px;
 }
 
 .filter-checkboxes input[type="checkbox"] {
-  margin-left: 8px;
+  margin-left: 5px;
 }
 
 /* Map Container */
@@ -141,11 +144,22 @@
 
 .clickable-region {
   cursor: pointer;
-  transition: opacity 0.3s;
+  transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s;
 }
 
 .clickable-region:hover {
   opacity: 0.8;
+}
+
+.clickable-region.selected {
+  transform: translateY(-8px);
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+}
+
+.clickable-region.selected .cls-9 {
+  fill: rgb(194, 180, 167);
+  stroke: #3d5956;
+  stroke-width: 8px;
 }
 
 /* Puzzle Markers */
@@ -248,6 +262,21 @@
 .pin-item h3 {
   color: var(--color-dark-teal);
   margin-bottom: 8px;
+}
+
+/* Region labels inside SVG */
+.region-label {
+  font-family: 'Heebo', Arial, sans-serif;
+  font-size: 32px;
+  font-weight: bold;
+  fill: #8b4513;
+  text-anchor: middle;
+  display: none;
+  pointer-events: none;
+}
+
+.region-label.visible {
+  display: block;
 }
 
 /* Responsive */

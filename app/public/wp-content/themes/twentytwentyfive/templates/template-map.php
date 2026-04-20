@@ -9,7 +9,7 @@ get_header();
 
 <div class="map-wrapper">
     <div class="map-header">
-        <h1><?php the_title(); ?></h1>
+        <h1>מפת שותפות</h1>
     </div>
     
     <div class="map-content-layout">
@@ -75,7 +75,7 @@ get_header();
                         if (!is_wp_error($audiences)) {
                             foreach ($audiences as $audience) {
                                 printf(
-                                    '<label><input type="checkbox" data-term="%s"> %s <span class="count">0</span></label>',
+                                    '<label><input type="checkbox" data-term="%s"> %s</label>',
                                     esc_attr($audience->name),
                                     esc_html($audience->name)
                                 );

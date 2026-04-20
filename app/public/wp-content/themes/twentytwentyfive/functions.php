@@ -188,3 +188,14 @@ function keren_shutafut_enqueue_map_assets() {
     }
 }
 add_action('wp_enqueue_scripts', 'keren_shutafut_enqueue_map_assets');
+
+/**
+ * Clean up browser tab title on the map page
+ */
+function keren_shutafut_map_document_title( $title_parts ) {
+    if ( is_page_template( 'templates/template-map.php' ) ) {
+        return [ 'title' => 'מפת שותפות' ];
+    }
+    return $title_parts;
+}
+add_filter( 'document_title_parts', 'keren_shutafut_map_document_title' );

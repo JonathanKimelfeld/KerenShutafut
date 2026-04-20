@@ -68,9 +68,9 @@
       }
 
       .clickable-region.selected .cls-9 {
-  	fill: rgba(160, 89, 77, 0.35);
-  	stroke: var(--color-rust, #a0594d);
-  	stroke-width: 5px;
+  	fill: rgb(194, 180, 167);
+  	stroke: #3d5956;
+  	stroke-width: 8px;
       }
     </style>
     <clipPath id="clippath">
@@ -120,4 +120,11 @@
     <path class="cls-9" d="M873.67,598.97c0-7.68-7.81-47.76-3.97-51.6,3.84-3.84,1.03-28.05,1.03-39.53s-15.35-13.01-26.1-23.76-37.23,15.74-50.67,29.17-19.96,39.92-29.94,39.92c-6.73,0-18.01,9.43-28.88,15.57,1.13,9.59,3.28,26.3,5.82,37.32,1.58,6.89,3.57,12.83,6.01,15.81,2.53-.47,4.02-.82,4.02-.82,0,0-1.49.35-4.02.82,1.07,1.3,2.22,2.05,3.47,2.05,10.82,0,45.6-19.79,65.39,0,16.16,16.16,52.7,19.12,65.55,19.67-3.78-4.73-6.4-9.96-6.4-14.85,0-13.82-1.32-22.09-1.32-29.77Z"/>
   </g>
   <g id="pin-markers"></g>
+  <g id="region-labels">
+    <text id="label-tzafon"    class="region-label" data-region="צפון"    x="720"  y="200" text-anchor="start">צפון</text>
+    <text id="label-darom"     class="region-label" data-region="דרום"    x="1300" y="720" text-anchor="start">דרום</text>
+    <text id="label-merkaz"    class="region-label" data-region="מרכז"    x="540"  y="650" text-anchor="end">מרכז</text>
+    <text id="label-carmel"    class="region-label" data-region="כרמל"    x="280"  y="440" text-anchor="end">כרמל</text>
+    <text id="label-jerusalem" class="region-label" data-region="ירושלים" x="960"  y="570" text-anchor="start">ירושלים</text>
+  </g>
 </svg>
