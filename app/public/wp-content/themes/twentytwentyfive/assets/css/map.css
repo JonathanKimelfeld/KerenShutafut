@@ -1,159 +1,375 @@
 /**
  * Keren Shutafut Interactive Map Styles
- * Color Palette from Ohad's Design
  */
 
-:root {
-  /* Primary Colors */
-  --color-beige: #d4c4b0;
-  --color-rust: #a0594d;
-  --color-sage: #8b9f8f;
-  --color-teal: #7fa9a3;
-  --color-dark-teal: #3d5956;
-  
-  /* Map Region Gradients */
-  --color-north-dark: #3d5956;
-  --color-north-light: #8b9f8f;
-  --color-south-beige: #d4c4b0;
-  --color-south-pink: #d8b5a8;
-  
-  /* Puzzle Piece Colors */
-  --color-puzzle-rust: #a0594d;
-  --color-puzzle-gray: #8f8481;
-  
-  /* UI Background */
-  --color-bg-cream: #f5ede4;
+/*
+ * ── Local font (place .ttf files in assets/fonts/open-sans-hebrew/) ──────
+ * Required files:
+ *   assets/fonts/open-sans-hebrew/OpenSansHebrew-Regular.ttf
+ *   assets/fonts/open-sans-hebrew/OpenSansHebrew-Bold.ttf
+ */
+@font-face {
+  font-family: 'Open Sans Hebrew';
+  src: url('../fonts/open-sans-hebrew/OpenSansHebrew-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
-/* Map Wrapper */
-.map-wrapper {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
+@font-face {
+  font-family: 'Open Sans Hebrew';
+  src: url('../fonts/open-sans-hebrew/OpenSansHebrew-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Open Sans Hebrew';
+  src: url('../fonts/open-sans-hebrew/OpenSansHebrew-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Design tokens ── */
+:root {
+  /* Brand palette */
+  --color-beige:       #d4c4b0;
+  --color-rust:        #a0594d;
+  --color-sage:        #8b9f8f;
+  --color-teal:        #7fa9a3;
+  --color-dark-teal:   #3d5956;
+  --color-puzzle-rust: #a0594d;
+  --color-puzzle-gray: #8f8481;
+  --color-bg-cream:    #f5ede4;
+
+  /* Design-spec tokens */
+  --ink:               #2b4a45;
+  --panel-bg:          rgba(198, 179, 166, 0.75);
+  --divider:           2px solid #2b4a45;
+  --font-main:         'Open Sans Hebrew', 'Arial Hebrew', Arial, sans-serif;
+
+  /* Panel geometry */
+  --panel-width:     22vw;
+  --panel-min-width: 360px;
+  --panel-max-width: 460px;
+  --panel-pad-v:     36px;
+  --panel-pad-h:     28px;
+  --panel-radius:    87px 0 0 87px; /* rounded left edge, flush right */
+
+  /* Spacing */
+  --title-to-section:  20px;
+  --header-to-options: 14px;
+  --row-gap:           14px;
+  --section-gap:       16px;
+}
+
+/* ─────────────────────────────────────────────
+   Base
+───────────────────────────────────────────── */
+body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.map-page {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  font-family: var(--font-main);
   direction: rtl;
 }
 
-.map-header h1 {
-  color: var(--color-dark-teal);
-  text-align: center;
-  margin-bottom: 30px;
+/* ─────────────────────────────────────────────
+   Full-screen map (behind the panel)
+───────────────────────────────────────────── */
+#map-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 1;
+  background: var(--color-bg-cream);
 }
 
-/* Two-column layout: map left, sidebar right */
-.map-content-layout {
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* SVG fills viewport via slice; transform-origin at 0,0 for zoom math */
+#map svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform-origin: 0 0;
+}
+
+/* ─────────────────────────────────────────────
+   Filter panel — fixed right overlay
+───────────────────────────────────────────── */
+.filter-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: var(--panel-width);
+  min-width: var(--panel-min-width);
+  max-width: var(--panel-max-width);
+  height: 100vh;
+  background: var(--panel-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 100;
+  /* ltr puts the scrollbar on the RIGHT side of the panel element */
+  direction: ltr;
+  border-radius: var(--panel-radius);
+}
+
+/* All panel text */
+.filter-panel,
+.filter-panel * {
+  font-family: var(--font-main);
+}
+
+/* Scrollbar on the right edge of the panel */
+.filter-panel::-webkit-scrollbar          { width: 4px; }
+.filter-panel::-webkit-scrollbar-track    { background: transparent; }
+.filter-panel::-webkit-scrollbar-thumb    { background: rgba(43, 74, 69, 0.35); border-radius: 2px; }
+.filter-panel::-webkit-scrollbar-thumb:hover { background: rgba(43, 74, 69, 0.6); }
+
+.filter-panel-inner {
+  /* Restore RTL for all content; direction: ltr on the parent only controls scrollbar side */
+  direction: rtl;
+  padding: var(--panel-pad-v) var(--panel-pad-h) 40px;
+}
+
+/* ── Panel title + clear button ── */
+.filter-panel-top {
+  margin-bottom: var(--title-to-section);
+}
+
+.filter-panel-title {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink);
+  margin: 0 0 14px;
+  direction: rtl;
+  text-align: right;
+}
+
+.clear-all-btn {
+  display: inline-block;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-main);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink);
+  cursor: pointer;
+  opacity: 0.55;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity 0.15s;
+}
+
+.clear-all-btn:hover  { opacity: 1; }
+.clear-all-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 2px;
+  opacity: 1;
+}
+
+.panel-description {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.7;
+  margin: 0;
+  direction: rtl;
+  text-align: right;
+  border-right: 2px solid var(--ink);
+  padding-right: 12px;
+}
+
+/* ─────────────────────────────────────────────
+   Filter sections
+───────────────────────────────────────────── */
+.filter-group {
+  padding-bottom: 14px;
+  border-bottom: var(--divider);
+  margin-bottom: var(--section-gap);
+}
+
+.filter-group--last {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* ── Section icon (inline, beside header text) ── */
+.filter-section-header {
   display: flex;
-  gap: 20px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: var(--header-to-options);
+  direction: rtl;
 }
 
-.map-content-layout #map-container {
-  flex: 1;
-  min-width: 0;
-}
-
-.map-sidebar {
-  width: 240px;
+.section-icon {
+  display: block;
+  width: 24px;
+  height: auto;
   flex-shrink: 0;
 }
 
-/* Filters */
-.map-filters {
-  background: white;
-  border-radius: 8px;
-  padding: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  position: sticky;
-  top: 20px;
+.filter-group-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.2;
+  direction: rtl;
+  text-align: right;
 }
 
-.filter-group {
-  margin-bottom: 12px;
+/* ─────────────────────────────────────────────
+   3-column options grid
+───────────────────────────────────────────── */
+.filter-options-grid {
+  display: grid;
+  /* Each column is at least as wide as its content; surplus space is shared equally */
+  grid-template-columns: repeat(3, max-content);
+  justify-content: start;
+  row-gap: var(--row-gap);
+  column-gap: 10px;
+  direction: rtl;
 }
 
-.filter-group label {
-  display: block;
-  font-weight: bold;
-  color: var(--color-dark-teal);
-  margin-bottom: 6px;
-  font-size: 14px;
-}
-
-.filter-buttons {
+/* ── Single option label ── */
+.filter-option {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.filter-btn {
-  background: var(--color-bg-cream);
-  border: 2px solid transparent;
-  border-radius: 6px;
-  padding: 5px 10px;
+  align-items: center;
+  gap: 8px;
+  direction: rtl;
   cursor: pointer;
-  transition: all 0.3s;
-  font-family: inherit;
   font-size: 13px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.4;
+  transition: opacity 0.15s;
+  white-space: nowrap; /* never wrap option labels */
 }
 
-.filter-btn:hover {
-  background: var(--color-sage);
-  color: white;
+.filter-option:hover { opacity: 0.7; }
+
+.option-text {
+  direction: rtl;
+  text-align: right;
+  white-space: nowrap;
 }
 
-.filter-btn.active {
-  background: var(--color-rust);
-  color: white;
-  border-color: var(--color-dark-teal);
-}
-
-.filter-btn .count {
-  background: white;
-  color: var(--color-dark-teal);
-  border-radius: 12px;
-  padding: 2px 8px;
-  font-size: 12px;
-  margin-right: 8px;
-  font-weight: bold;
-}
-
-.filter-checkboxes label {
-  display: block;
-  padding: 3px 6px;
+/* ─────────────────────────────────────────────
+   Custom checkbox — 14.79 × 14.79 px
+───────────────────────────────────────────── */
+.filter-option input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14.79px;
+  height: 14.79px;
+  min-width: 14.79px;
+  border: 2px solid var(--ink);
+  border-radius: 2.63px;
+  background: transparent;
+  margin: 0;
   cursor: pointer;
-  font-size: 12px;
-}
-
-.filter-checkboxes input[type="checkbox"] {
-  margin-left: 5px;
-}
-
-/* Map Container */
-#map-container {
   position: relative;
-  background: var(--color-bg-cream);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
 }
 
-#israel-map {
-  width: 100%;
-  height: auto;
-  display: block;
+.filter-option input[type="checkbox"]:checked {
+  background: var(--ink);
+  border-color: var(--ink);
 }
 
+.filter-option input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3.2px;
+  top: 1px;
+  width: 5.5px;
+  height: 8.5px;
+  border: 2px solid white;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+/* ─────────────────────────────────────────────
+   Custom radio — square with checkmark (matches checkbox)
+───────────────────────────────────────────── */
+.filter-option input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14.79px;
+  height: 14.79px;
+  min-width: 14.79px;
+  border: 2px solid var(--ink);
+  border-radius: 2.63px;
+  background: transparent;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.filter-option input[type="radio"]:checked {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.filter-option input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3.2px;
+  top: 1px;
+  width: 5.5px;
+  height: 8.5px;
+  border: 2px solid white;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+/* Shared focus ring */
+.filter-option input[type="checkbox"]:focus-visible,
+.filter-option input[type="radio"]:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────
+   SVG region interaction
+───────────────────────────────────────────── */
 .clickable-region {
   cursor: pointer;
-  transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s;
+  transition: opacity 0.25s;
 }
 
-.clickable-region:hover {
-  opacity: 0.8;
-}
+.clickable-region:hover { opacity: 0.8; }
 
 .clickable-region.selected {
-  transform: translateY(-8px);
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.28));
 }
 
 .clickable-region.selected .cls-9 {
@@ -162,13 +378,10 @@
   stroke-width: 8px;
 }
 
-/* Puzzle Markers */
+/* ── Puzzle markers ── */
 #puzzle-markers {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   pointer-events: none;
 }
 
@@ -178,18 +391,10 @@
   height: 50px;
   pointer-events: all;
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: transform 0.25s;
 }
 
-.puzzle-marker:hover {
-  transform: scale(1.1);
-}
-
-.puzzle-icon {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
+.puzzle-marker:hover { transform: scale(1.1); }
 
 .marker-count {
   position: absolute;
@@ -203,68 +408,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  font-weight: 700;
   color: var(--color-rust);
-  font-size: 14px;
+  font-size: 13px;
 }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-overlay.hidden {
-  display: none;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 30px;
-  position: relative;
-  direction: rtl;
-}
-
-.modal-close {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: none;
-  border: none;
-  font-size: 32px;
-  cursor: pointer;
-  color: var(--color-dark-teal);
-}
-
-#modal-title {
-  color: var(--color-rust);
-  margin-bottom: 20px;
-}
-
-.pin-item {
-  border-bottom: 1px solid var(--color-bg-cream);
-  padding: 15px 0;
-}
-
-.pin-item h3 {
-  color: var(--color-dark-teal);
-  margin-bottom: 8px;
-}
-
-/* Region labels inside SVG */
+/* ── Region labels ── */
 .region-label {
   font-family: 'Heebo', Arial, sans-serif;
   font-size: 32px;
@@ -275,33 +424,134 @@
   pointer-events: none;
 }
 
-.region-label.visible {
-  display: block;
+.region-label.visible { display: block; }
+
+/* ─────────────────────────────────────────────
+   Modal
+───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .map-wrapper {
-    padding: 10px;
+.modal-overlay.hidden { display: none; }
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 32px;
+  position: relative;
+  direction: rtl;
+  font-family: var(--font-main);
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink);
+  transition: opacity 0.15s;
+}
+
+.modal-close:hover { opacity: 0.6; }
+
+#modal-title {
+  color: var(--color-rust);
+  margin: 0 0 20px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.pin-item {
+  border-bottom: 1px solid var(--color-bg-cream);
+  padding: 14px 0;
+}
+
+.pin-item:last-child { border-bottom: none; }
+
+.pin-item h3 {
+  color: var(--ink);
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.pin-item p {
+  color: #555;
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ─────────────────────────────────────────────
+   Responsive breakpoints
+───────────────────────────────────────────── */
+
+/* Medium–large screens */
+@media screen and (max-width: 1400px) {
+  :root { --panel-width: 26vw; }
+}
+
+/* Tablet landscape */
+@media screen and (max-width: 1024px) {
+  :root {
+    --panel-width:       32vw;
+    --panel-radius:      60px 0 0 60px;
+    --panel-pad-h:       22px;
+    --title-to-section:  28px;
+    --header-to-options: 12px;
+    --row-gap:           12px;
+    --section-gap:       12px;
+  }
+}
+
+/* Tablet portrait — bottom sheet */
+@media screen and (max-width: 768px) {
+  :root {
+    --panel-width:       100vw;
+    --panel-min-width:   unset;
+    --panel-max-width:   unset;
+    --panel-pad-v:       20px;
+    --panel-pad-h:       16px;
+    --title-to-section:  16px;
+    --header-to-options: 10px;
+    --row-gap:           12px;
+    --section-gap:       12px;
+    --panel-radius:      40px 40px 0 0;
   }
 
-  .map-content-layout {
-    flex-direction: column;
+  .filter-panel {
+    width: var(--panel-width) !important;
+    height: auto;
+    max-height: 60vh;
+    top: auto;
+    bottom: 0;
+    right: 0;
+    border-radius: var(--panel-radius);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
   }
 
-  .map-sidebar {
-    width: 100%;
-  }
+  .filter-panel-title { font-size: 22px; }
+  .filter-group-title  { font-size: 16px; }
+  .filter-option       { font-size: 12px; }
+}
 
-  .map-filters {
-    position: static;
-  }
-
-  .filter-buttons {
-    flex-direction: column;
-  }
-
-  .filter-btn {
-    width: 100%;
+/* Mobile — 2-column grid */
+@media screen and (max-width: 480px) {
+  .filter-options-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
