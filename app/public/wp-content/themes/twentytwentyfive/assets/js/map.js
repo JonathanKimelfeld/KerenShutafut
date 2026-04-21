@@ -5,7 +5,7 @@
 (function () {
     'use strict';
 
-    // ── Per-region zoom scales (adjust after testing) ───────────────────────
+    // ── Per-region zoom scales ───────────────────────────────────────────────
     const ZOOM_LEVELS = {
         'צפון':      4.5,
         'כרמל':      5.0,
@@ -14,8 +14,10 @@
         'דרום':      3.5,
     };
 
-    // ── State ───────────────────────────────────────────────────────────────
-    let allPins = [];
+    // ── State ────────────────────────────────────────────────────────────────
+    let allPins        = [];
+    let pinSymbolsReady = false;
+
     let activeFilters = {
         geographic: null,
         cycle:      null,
@@ -23,12 +25,11 @@
         domains:    [],
     };
 
-    // Cached SVG viewport info (set after SVG loads, before any CSS zoom).
     let svgVbWidth    = 0;
     let svgVbHeight   = 0;
-    const regionBBoxes = {}; // region name → {cx, cy} in SVG coordinate space
+    const regionBBoxes = {};
 
-    // ── Boot ────────────────────────────────────────────────────────────────
+    // ── Boot ─────────────────────────────────────────────────────────────────
 
     document.addEventListener('DOMContentLoaded', function () {
         initMap();
@@ -36,7 +37,7 @@
         setupFilters();
     });
 
-    // ── Map init ────────────────────────────────────────────────────────────
+    // ── Map init ─────────────────────────────────────────────────────────────
 
     function initMap() {
         if (!document.getElementById('map')) {
@@ -57,27 +58,81 @@
             if (svg) {
                 svg.removeAttribute('width');
                 svg.removeAttribute('height');
-                // slice → always fills the full viewport, cropping excess
                 svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-
-                // Cache intrinsic viewBox dimensions for zoom coordinate math.
                 svgVbWidth  = svg.viewBox.baseVal.width;
                 svgVbHeight = svg.viewBox.baseVal.height;
             }
 
             setupRegionInteractivity();
-            cacheRegionCenters(); // must run before any CSS transforms
+            cacheRegionCenters();
+
+            await loadPinSymbols();
+            pinSymbolsReady = true;
+
+            // If pins already fetched while map was loading, render them now
+            if (allPins.length > 0) applyFilters();
+
         } catch (error) {
             console.error('Error loading SVG:', error);
         }
     }
 
-    // ── Zoom: coordinate helpers ─────────────────────────────────────────────
+    // ── Pin symbol injection ─────────────────────────────────────────────────
 
     /**
-     * Cache each region's center in SVG coordinate space.
-     * Called once after load, before any CSS zoom is applied.
+     * Fetch pin.svg, resolve class-based fills to inline styles (to avoid
+     * conflicts with map SVG styles), and inject both layers as <symbol>
+     * elements into the map SVG's <defs>.
      */
+    async function loadPinSymbols() {
+        const mapSvg = document.querySelector('#map svg');
+        if (!mapSvg) return;
+
+        try {
+            const resp = await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin.svg');
+            const text = await resp.text();
+            const parser = new DOMParser();
+            const pinDoc = parser.parseFromString(text, 'image/svg+xml');
+
+            // Map class names → fill values so we don't need the pin SVG's <style>
+            const fillMap = {
+                'cls-1': '#fff4e3',
+                'cls-2': 'rgba(10,5,0,0.15)',
+                'cls-3': 'rgba(10,5,0,0.20)',
+                'cls-4': '#a1422b',
+            };
+            pinDoc.querySelectorAll('[class]').forEach(el => {
+                const cls = el.getAttribute('class');
+                if (fillMap[cls]) {
+                    el.setAttribute('fill', fillMap[cls]);
+                    el.removeAttribute('class');
+                }
+            });
+
+            let defs = mapSvg.querySelector('defs');
+            if (!defs) {
+                defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                mapSvg.prepend(defs);
+            }
+
+            // pin_left → #ksm-pin-1, pin_right → #ksm-pin-2
+            ['pin_left', 'pin_right'].forEach((layerId, i) => {
+                const g = pinDoc.getElementById(layerId);
+                if (!g) return;
+                const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
+                sym.id = `ksm-pin-${i + 1}`;
+                sym.setAttribute('viewBox', '0 0 184.55 184.55');
+                sym.innerHTML = g.innerHTML;
+                defs.appendChild(sym);
+            });
+
+        } catch (err) {
+            console.error('Error loading pin symbols:', err);
+        }
+    }
+
+    // ── Zoom: coordinate helpers ─────────────────────────────────────────────
+
     function cacheRegionCenters() {
         document.querySelectorAll('.clickable-region[data-region]').forEach(region => {
             const bbox = region.getBBox();
@@ -88,42 +143,19 @@
         });
     }
 
-    /**
-     * Convert an SVG coordinate point to its baseline viewport pixel position,
-     * accounting for preserveAspectRatio="xMidYMid slice" rendering.
-     *
-     * Must be called with no CSS transform on the SVG element (or with the
-     * cached vb dimensions that reflect the untransformed state).
-     */
     function svgToViewport(svgCx, svgCy) {
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-
-        // "slice" uses the larger scale factor so both axes are covered.
         const scaleX = vw / svgVbWidth;
         const scaleY = vh / svgVbHeight;
-        const s      = Math.max(scaleX, scaleY);
-
-        // Centering offsets (one axis will be 0 or negative if content is cropped).
+        const s  = Math.max(scaleX, scaleY);
         const ox = (vw - svgVbWidth  * s) / 2;
         const oy = (vh - svgVbHeight * s) / 2;
-
-        return {
-            x: svgCx * s + ox,
-            y: svgCy * s + oy,
-        };
+        return { x: svgCx * s + ox, y: svgCy * s + oy };
     }
 
-    // ── Zoom: CSS transform approach ─────────────────────────────────────────
+    // ── Zoom: CSS transform ──────────────────────────────────────────────────
 
-    /**
-     * Zoom the SVG to centre the named region in the visible map area
-     * (viewport minus panel width).  Null → animate back to identity.
-     *
-     * Math: with transform-origin 0 0 and transform translate(dx,dy) scale(s):
-     *   screen position of SVG pixel (px, py) = (px*s + dx, py*s + dy)
-     * Solve for dx, dy so that the region centre lands at (targetX, targetY).
-     */
     function zoomToRegion(regionName) {
         const svg = document.querySelector('#map svg');
         if (!svg) return;
@@ -137,18 +169,14 @@
         const cached = regionBBoxes[regionName];
         if (!cached || svgVbWidth === 0) return;
 
-        // Baseline viewport pixel position of the region centre.
-        const pos = svgToViewport(cached.cx, cached.cy);
-
-        // Target: centre of the visible map area (viewport minus panel).
+        const pos        = svgToViewport(cached.cx, cached.cy);
         const panelEl    = document.querySelector('.filter-panel');
         const panelWidth = panelEl ? panelEl.offsetWidth : window.innerWidth * 0.22;
         const targetX    = (window.innerWidth - panelWidth) / 2;
         const targetY    = window.innerHeight / 2;
-
-        const s  = ZOOM_LEVELS[regionName] ?? 4.0;
-        const dx = targetX - pos.x * s;
-        const dy = targetY - pos.y * s;
+        const s          = ZOOM_LEVELS[regionName] ?? 4.0;
+        const dx         = targetX - pos.x * s;
+        const dy         = targetY - pos.y * s;
 
         svg.style.transformOrigin = '0 0';
         svg.style.transition      = 'transform 600ms cubic-bezier(0.4, 0.0, 0.2, 1)';
@@ -172,7 +200,6 @@
     function setupRegionInteractivity() {
         document.querySelectorAll('.clickable-region[data-region]').forEach(region => {
             const regionName = region.dataset.region;
-
             region.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -217,7 +244,6 @@
     // ── Filter setup ─────────────────────────────────────────────────────────
 
     function setupFilters() {
-        // מיקום — single-select, deselectable
         document.querySelectorAll('[data-filter-type="geographic_region"] input[type="radio"]').forEach(input => {
             input.addEventListener('click', function () {
                 if (activeFilters.geographic === this.dataset.term) {
@@ -231,7 +257,6 @@
             });
         });
 
-        // מחזור — single-select, deselectable
         document.querySelectorAll('[data-filter-type="activity_cycle"] input[type="radio"]').forEach(input => {
             input.addEventListener('click', function () {
                 if (activeFilters.cycle === this.dataset.term) {
@@ -244,7 +269,6 @@
             });
         });
 
-        // קהל יעד — multi-select
         document.querySelectorAll('[data-filter-type="target_audience"] input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', function () {
                 const term = this.dataset.term;
@@ -255,7 +279,6 @@
             });
         });
 
-        // תחום — multi-select
         document.querySelectorAll('[data-filter-type="domains"] input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', function () {
                 const term = this.dataset.term;
@@ -311,59 +334,51 @@
         return terms.some(t => (typeof t === 'object' ? t.name : t) === termName);
     }
 
-    // ── Display pins ──────────────────────────────────────────────────────────
+    // ── Display pins ─────────────────────────────────────────────────────────
 
     function displayPins(pins) {
-        const pinsByRegion = { 'צפון': [], 'מרכז': [], 'דרום': [], 'כרמל': [] };
-
-        pins.forEach(pin => {
-            const regions = pin.taxonomies?.geographic_region;
-            if (!Array.isArray(regions)) return;
-            regions.forEach(r => {
-                const name = typeof r === 'object' ? r.name : r;
-                if (pinsByRegion[name]) pinsByRegion[name].push(pin);
-            });
-        });
+        if (!pinSymbolsReady) return;
 
         const markersGroup = document.getElementById('pin-markers');
         if (!markersGroup) return;
         markersGroup.innerHTML = '';
 
-        Object.keys(pinsByRegion).forEach(regionName => {
-            const count  = pinsByRegion[regionName].length;
-            const region = document.querySelector(`[data-region="${regionName}"]`);
-            if (!region || count === 0 || activeFilters.geographic === regionName) return;
+        pins.forEach(pin => {
+            if (pin.svg_x == null || pin.svg_y == null) return;
 
-            const bbox    = region.getBBox();
-            const centerX = bbox.x + bbox.width  / 2;
-            const centerY = bbox.y + bbox.height / 2;
+            // Alternate between the two pin designs by pin ID
+            const typeNum = (pin.id % 2 === 0) ? 1 : 2;
 
-            const badge = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            badge.classList.add('pin-count-badge');
-            badge.dataset.region = regionName;
-            badge.style.cursor   = 'pointer';
-            badge.innerHTML = `
-                <use href="#puzzle-piece"
-                     x="${centerX - 25}" y="${centerY - 25}"
-                     width="50" height="50"
-                     fill="var(--color-puzzle-rust)" filter="url(#puzzle-shadow)"/>
-                <circle cx="${centerX}" cy="${centerY}" r="14" fill="white"/>
-                <text x="${centerX}" y="${centerY + 5}" text-anchor="middle"
-                      fill="var(--color-rust)" font-size="16" font-weight="bold">${count}</text>
-            `;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.classList.add('map-pin');
+            g.setAttribute('data-pin-id', String(pin.id));
+            g.setAttribute('transform', `translate(${pin.svg_x},${pin.svg_y})`);
 
-            badge.addEventListener('click', function (e) {
-                e.stopPropagation();
-                const wasActive = activeFilters.geographic === regionName;
-                setGeoFilter(wasActive ? null : regionName);
-                syncMapRegionSelection(activeFilters.geographic);
-                applyFilters();
-            });
+            // Inner group: CSS scale applies here so it doesn't conflict
+            // with the outer group's SVG translate attribute
+            const inner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            inner.classList.add('map-pin-inner');
+
+            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+            use.setAttribute('href', `#ksm-pin-${typeNum}`);
+            use.setAttribute('width', '60');
+            use.setAttribute('height', '60');
+            // Centre horizontally, anchor bottom of pin at the coordinate point
+            use.setAttribute('x', '-30');
+            use.setAttribute('y', '-60');
 
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-            title.textContent = `${count} פרויקטים ב${regionName}`;
-            badge.appendChild(title);
-            markersGroup.appendChild(badge);
+            title.textContent = pin.title;
+
+            inner.appendChild(use);
+            g.appendChild(inner);
+            g.appendChild(title);
+            g.addEventListener('click', e => {
+                e.stopPropagation();
+                showPinModal(pin);
+            });
+
+            markersGroup.appendChild(g);
         });
     }
 
@@ -382,7 +397,24 @@
         });
     }
 
-    // ── Modal ─────────────────────────────────────────────────────────────────
+    // ── Pin modal ────────────────────────────────────────────────────────────
+
+    function showPinModal(pin) {
+        const overlay = document.getElementById('modal-overlay');
+        const titleEl = document.getElementById('modal-title');
+        const bodyEl  = document.getElementById('modal-body');
+        if (!overlay || !titleEl || !bodyEl) return;
+
+        titleEl.textContent = pin.title;
+
+        let html = '';
+        if (pin.content) html += `<p>${pin.content}</p>`;
+        if (pin.project_link) {
+            html += `<p><a href="${pin.project_link}" target="_blank" rel="noopener noreferrer">לאתר הפרויקט &#x2197;</a></p>`;
+        }
+        bodyEl.innerHTML = html;
+        overlay.classList.remove('hidden');
+    }
 
     document.addEventListener('click', function (e) {
         if (e.target.classList.contains('modal-close') ||

@@ -378,6 +378,35 @@ body {
   stroke-width: 8px;
 }
 
+/* ── Individual map pins ── */
+#pin-markers {
+  pointer-events: all;
+}
+
+.map-pin {
+  cursor: pointer;
+}
+
+/* Scale the inner group so CSS transform doesn't conflict
+   with the outer group's SVG translate attribute */
+.map-pin-inner {
+  transform-origin: 0 0; /* scale from the pin's anchor point */
+  transition: transform 0.2s ease;
+}
+
+.map-pin:hover .map-pin-inner {
+  transform: scale(1.25);
+}
+
+.map-pin:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+}
+
+.map-pin.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ── Puzzle markers ── */
 #puzzle-markers {
   position: absolute;
