@@ -42,11 +42,11 @@
   --color-dark-teal:   #3d5956;
   --color-puzzle-rust: #a0594d;
   --color-puzzle-gray: #8f8481;
-  --color-bg-cream:    #f5ede4;
+  --color-bg-cream:    #fff4e3;
 
   /* Design-spec tokens */
   --ink:               #2b4a45;
-  --panel-bg:          rgba(198, 179, 166, 0.75);
+  --panel-bg:          #fff4e3;
   --divider:           2px solid #2b4a45;
   --font-main:         'Open Sans Hebrew', 'Arial Hebrew', Arial, sans-serif;
 
@@ -72,12 +72,14 @@ body {
   overflow: hidden;
   margin: 0;
   padding: 0;
+  background: #fff4e3;
 }
 
 .map-page {
   position: relative;
   width: 100vw;
   height: 100vh;
+  background: #fff4e3;
   font-family: var(--font-main);
   direction: rtl;
 }
@@ -93,7 +95,7 @@ body {
   height: 100vh;
   overflow: hidden;
   z-index: 1;
-  background: var(--color-bg-cream);
+  background: #fff4e3;
 }
 
 #map {
@@ -119,6 +121,7 @@ body {
   width: var(--panel-width);
   min-width: var(--panel-min-width);
   max-width: var(--panel-max-width);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.28), -6px 0 18px rgba(0, 0, 0, 0.16);
   height: 100vh;
   background: var(--panel-bg);
   backdrop-filter: blur(8px);
@@ -129,6 +132,9 @@ body {
   /* ltr puts the scrollbar on the RIGHT side of the panel element */
   direction: ltr;
   border-radius: var(--panel-radius);
+  border: 2px solid var(--ink);
+  border-right: none;
+  box-sizing: border-box;
 }
 
 /* All panel text */
@@ -155,7 +161,7 @@ body {
 }
 
 .filter-panel-title {
-  font-size: 30px;
+  font-size: 27px;
   font-weight: 700;
   line-height: 1.2;
   color: var(--ink);
@@ -164,20 +170,34 @@ body {
   text-align: right;
 }
 
+.filter-clear-row {
+  border-top: var(--divider);
+  padding-top: 16px;
+  margin-top: 0;
+  direction: ltr;
+  text-align: left;
+}
+
 .clear-all-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: none;
   border: none;
   padding: 0;
   font-family: var(--font-main);
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 18px;
+  font-weight: 500;
   color: var(--ink);
   cursor: pointer;
-  opacity: 0.55;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  opacity: 0.7;
   transition: opacity 0.15s;
+}
+
+.clear-all-btn .clear-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 .clear-all-btn:hover  { opacity: 1; }
@@ -189,7 +209,7 @@ body {
 }
 
 .panel-description {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--ink);
   line-height: 1.7;
@@ -226,13 +246,13 @@ body {
 
 .section-icon {
   display: block;
-  width: 24px;
+  width: 22px;
   height: auto;
   flex-shrink: 0;
 }
 
 .filter-group-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 500;
   color: var(--ink);
   margin: 0;
@@ -261,7 +281,7 @@ body {
   gap: 8px;
   direction: rtl;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--ink);
   line-height: 1.4;
@@ -466,18 +486,16 @@ body {
 .project-panel {
   position: fixed;
   top: 0;
-  /* sits immediately left of the filter panel */
-  right: clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width));
-  width: var(--panel-width);
-  min-width: var(--panel-min-width);
-  max-width: var(--panel-max-width);
+  right: 0; /* extends to the right edge — filter panel (z-index 100) overlaps */
+  /* content-width + filter-panel-width */
+  width: calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) * 2);
   height: 100vh;
-  background: rgba(198, 179, 166, 0.92);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: #fff4e3;
   border-radius: var(--panel-radius);
-  border: 1.4px solid var(--ink);
+  border: 2px solid var(--ink);
   border-right: none;
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.28), -6px 0 18px rgba(0, 0, 0, 0.16);
+  box-sizing: border-box;
   z-index: 90;
   transform: translateX(100%);
   transition: transform 0.3s ease-in-out;
@@ -492,7 +510,8 @@ body {
 
 .project-panel-inner {
   direction: rtl;
-  padding: var(--panel-pad-v) var(--panel-pad-h) 40px;
+  /* right padding clears the filter panel sitting on top */
+  padding: var(--panel-pad-v) calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) + var(--panel-pad-h)) 40px var(--panel-pad-h);
   height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
@@ -510,7 +529,7 @@ body {
   left: 22px;
   background: none;
   border: none;
-  font-size: 28px;
+  font-size: 25px;
   line-height: 1;
   cursor: pointer;
   color: var(--ink);
@@ -521,7 +540,7 @@ body {
 .project-panel-close:hover { opacity: 1; }
 
 .project-panel-title {
-  font-size: 26px;
+  font-size: 23px;
   font-weight: 700;
   color: var(--ink);
   margin: 0 0 16px;
@@ -533,13 +552,12 @@ body {
 .project-panel-divider {
   height: 0;
   border: none;
-  border-top: 1.4px solid var(--ink);
+  border-top: var(--divider);
   margin: 14px 0;
-  opacity: 0.5;
 }
 
 .project-panel-description {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--ink);
   line-height: 1.75;
@@ -560,15 +578,15 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink);
   direction: rtl;
 }
 
 .project-meta-item .meta-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: var(--ink);
 }
@@ -579,7 +597,7 @@ body {
 }
 
 .project-panel-org {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ink);
   text-align: right;
 }
@@ -598,16 +616,18 @@ body {
   align-items: center;
   gap: 8px;
   margin-top: 14px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
   color: var(--ink);
   text-decoration: none;
   direction: rtl;
   opacity: 0.8;
   transition: opacity 0.15s;
 }
+.project-panel-link strong {
+  font-weight: 700;
+}
 .project-panel-link:hover { opacity: 1; text-decoration: underline; }
-.project-panel-link .meta-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.project-panel-link .meta-icon { width: 36px; height: 36px; flex-shrink: 0; }
 
 /* Hide placeholder items when empty */
 .project-meta-item.hidden,

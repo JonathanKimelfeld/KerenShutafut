@@ -110,9 +110,10 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
             <!-- תחום — multi-select -->
             <div class="filter-group filter-group--last">
                 <div class="filter-section-header">
-                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" stroke="#2b4a45" stroke-width="1.5"/>
-                        <circle cx="7" cy="7" r="1.5" fill="#2b4a45"/>
+                    <svg class="section-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path fill="#2b4a45" d="M303.78,65.15c-47.63-9.6-75.61,13.28-77.67,61.83-2.1,49.69,22.91,59.25,71.67,69.08,40.25,8.12,52.22-4.01,70.59-40.73,26.59-53.14-10.59-79.28-64.59-90.18Z"/>
+                        <path fill="#2b4a45" d="M113.11,307.24c-22.92-8.61-38.5-6.72-38.5-31.2,0-33.86,5.86-46.97,37.86-58.04,59.05-20.43,82.08-43.09,126.05,1.3,39.77,40.15,18.04,66.31-13.32,113.32-31.66,47.46-58.84-5.37-112.1-25.38Z"/>
+                        <path fill="#2b4a45" d="M198.6,104.41c11.68,42.33-26.47,46.64-69.71,54.31-47.66,8.45-82.23,22.09-95.1-24.57-13.58-49.2,21.12-56.4,65.68-81.28,52.37-29.24,84.44-1.68,99.13,51.54Z"/>
                     </svg>
                     <h2 class="filter-group-title">תחום</h2>
                 </div>
@@ -130,6 +131,16 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                     }
                     ?>
                 </div>
+            </div>
+
+            <!-- נקה הכל -->
+            <div class="filter-clear-row">
+                <button class="clear-all-btn" id="clear-all-filters">
+                    נקה הכל
+                    <svg class="clear-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path fill="currentColor" d="M199.2,33.79c-90.2,0-158.45,76.18-158.45,166.39s68.25,158.87,158.45,158.87,168.03-68.67,168.03-158.87S289.4,33.79,199.2,33.79ZM199.2,107.29c14.35,0,27.46,3.89,38.87,10.5-6.73,14.94-19.49,32.8-43.66,43.92-36.33,16.71-59.39,67.69-68.34,91.11-12.45-14.3-20.18-32.38-20.18-52.65,0-48.84,44.47-92.89,93.31-92.89ZM199.2,285.55c-9.2,0-18.24-1.3-26.86-3.73,9.17-20.3,24.91-42.52,51.78-53.01,25.27-9.87,43.69-30.01,56.51-49.75,1.45,6.86,2.29,13.92,2.29,21.12,0,48.84-34.89,85.37-83.73,85.37Z"/>
+                    </svg>
+                </button>
             </div>
 
         </div>
@@ -163,9 +174,9 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                 </li>
                 <li class="project-meta-item" id="pm-domains">
                     <svg class="meta-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path fill="currentColor" d="M93.45,321.02h-9.53c-18.3,0-20.54-15.19-20.54-33.49,0-90.07-2.74-90.07-2.74-180.15,0-18.3,14.52-35.56,32.81-35.56h7.2c18.3,0,26.99,17.26,26.99,35.56,0,90.07,1.45,90.07,1.45,180.15,0,18.3-17.34,33.49-35.63,33.49Z"/>
-                        <path fill="currentColor" d="M311.71,321.02h-5.62c-18.3,0-24.46-15.19-24.46-33.49,0-90.07-2.74-90.07-2.74-180.15,0-18.3,14.52-35.56,32.81-35.56h6.12c18.3,0,28.07,17.26,28.07,35.56,0,90.07,1.45,90.07,1.45,180.15,0,18.3-17.34,33.49-35.63,33.49Z"/>
-                        <path fill="currentColor" d="M208.17,317.12l-7.09-.03c-18.3,0-30.44-11.26-30.44-29.56,0-90.07,4.42-90.07,4.42-180.15,0-18.3,14.82-34.84,33.12-34.84l7.35-.27c18.3,0,28.14,16.81,28.14,35.1,0,90.07-5.07,90.07-5.07,180.15,0,18.3-12.13,29.59-30.42,29.59Z"/>
+                        <path fill="currentColor" d="M303.78,65.15c-47.63-9.6-75.61,13.28-77.67,61.83-2.1,49.69,22.91,59.25,71.67,69.08,40.25,8.12,52.22-4.01,70.59-40.73,26.59-53.14-10.59-79.28-64.59-90.18Z"/>
+                        <path fill="currentColor" d="M113.11,307.24c-22.92-8.61-38.5-6.72-38.5-31.2,0-33.86,5.86-46.97,37.86-58.04,59.05-20.43,82.08-43.09,126.05,1.3,39.77,40.15,18.04,66.31-13.32,113.32-31.66,47.46-58.84-5.37-112.1-25.38Z"/>
+                        <path fill="currentColor" d="M198.6,104.41c11.68,42.33-26.47,46.64-69.71,54.31-47.66,8.45-82.23,22.09-95.1-24.57-13.58-49.2,21.12-56.4,65.68-81.28,52.37-29.24,84.44-1.68,99.13,51.54Z"/>
                     </svg>
                     <span></span>
                 </li>
@@ -183,13 +194,11 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                 <span class="org-label">ארגון מפעיל:</span>
                 <span class="org-name"></span>
             </div>
+            <div class="project-panel-divider"></div>
 
             <a class="project-panel-link" id="pm-link" href="#" target="_blank" rel="noopener noreferrer">
-                <svg class="meta-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                    <path stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                </svg>
-                לאתר הפרויקט
+                <img class="meta-icon" src="<?php echo get_template_directory_uri(); ?>/assets/images/link_icon.svg" alt="" aria-hidden="true">
+                <strong>לינק לאתר</strong>
             </a>
 
         </div>
