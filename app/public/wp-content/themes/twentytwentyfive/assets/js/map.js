@@ -15,8 +15,9 @@
     };
 
     // ── State ────────────────────────────────────────────────────────────────
-    let allPins        = [];
+    let allPins         = [];
     let pinSymbolsReady = false;
+    let gridManager     = null;   // KSM.GridManager instance, set after SVG loads
 
     let activeFilters = {
         geographic: null,
@@ -66,6 +67,12 @@
             setupRegionInteractivity();
             cacheRegionCenters();
 
+            // Initialise the grid manager now that region elements are in the DOM
+            if (window.KSM?.GridManager) {
+                gridManager = new window.KSM.GridManager();
+                gridManager.cacheRegionBounds();
+            }
+
             await loadPinSymbols();
             pinSymbolsReady = true;
 
@@ -89,12 +96,19 @@
         if (!mapSvg) return;
 
         try {
+            const parser = new DOMParser();
+
+            let defs = mapSvg.querySelector('defs');
+            if (!defs) {
+                defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                mapSvg.prepend(defs);
+            }
+
+            // ── Colored pin ───────────────────────────────────────────────────
             const resp = await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin.svg');
             const text = await resp.text();
-            const parser = new DOMParser();
             const pinDoc = parser.parseFromString(text, 'image/svg+xml');
 
-            // Map class names → fill values so we don't need the pin SVG's <style>
             const fillMap = {
                 'cls-1': '#fff4e3',
                 'cls-2': 'rgba(10,5,0,0.15)',
@@ -109,18 +123,42 @@
                 }
             });
 
-            let defs = mapSvg.querySelector('defs');
-            if (!defs) {
-                defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-                mapSvg.prepend(defs);
-            }
-
-            // pin_left → #ksm-pin-1, pin_right → #ksm-pin-2
             ['pin_left', 'pin_right'].forEach((layerId, i) => {
                 const g = pinDoc.getElementById(layerId);
                 if (!g) return;
                 const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
                 sym.id = `ksm-pin-${i + 1}`;
+                sym.setAttribute('viewBox', '0 0 184.55 184.55');
+                sym.innerHTML = g.innerHTML;
+                defs.appendChild(sym);
+            });
+
+            // ── Grey pin ──────────────────────────────────────────────────────
+            const greyResp = await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin_export_grey.svg');
+            const greyText = await greyResp.text();
+            const greyDoc  = parser.parseFromString(greyText, 'image/svg+xml');
+
+            // Resolve class-based fills/opacities inline (gradients replaced with flat colours)
+            const greyAttrMap = {
+                'cls-1': { fill: 'rgba(0,0,0,0.08)' },
+                'cls-2': { fill: 'rgba(0,0,0,0.08)' },
+                'cls-3': { fill: '#191919', opacity: '0.43' },
+                'cls-4': { fill: '#fcf3e4' },
+                'cls-5': { opacity: '0.74' },
+            };
+            greyDoc.querySelectorAll('[class]').forEach(el => {
+                const attrs = greyAttrMap[el.getAttribute('class')];
+                if (attrs) {
+                    Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+                    el.removeAttribute('class');
+                }
+            });
+
+            ['pin_grey_left', 'pin_grey_right'].forEach((layerId, i) => {
+                const g = greyDoc.getElementById(layerId);
+                if (!g) return;
+                const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
+                sym.id = `ksm-pin-grey-${i + 1}`;
                 sym.setAttribute('viewBox', '0 0 184.55 184.55');
                 sym.innerHTML = g.innerHTML;
                 defs.appendChild(sym);
@@ -336,36 +374,46 @@
 
     // ── Display pins ─────────────────────────────────────────────────────────
 
-    function displayPins(pins) {
+    function displayPins(activePins) {
         if (!pinSymbolsReady) return;
 
         const markersGroup = document.getElementById('pin-markers');
         if (!markersGroup) return;
         markersGroup.innerHTML = '';
 
-        pins.forEach(pin => {
-            if (pin.svg_x == null || pin.svg_y == null) return;
+        if (gridManager) gridManager.reset();
 
-            // Alternate between the two pin designs by pin ID
-            const typeNum = (pin.id % 2 === 0) ? 1 : 2;
+        const filtersApplied = activePins.length < allPins.length;
+        const activeIds = filtersApplied ? new Set(activePins.map(p => p.id)) : null;
+
+        // Inactive pins first in DOM (lower SVG stack), active pins on top
+        const ordered = filtersApplied
+            ? [...allPins.filter(p => !activeIds.has(p.id)), ...activePins]
+            : allPins;
+
+        ordered.forEach(pin => {
+            const isActive = !filtersApplied || activeIds.has(pin.id);
+            const pos = resolvePinPosition(pin);
+            if (!pos) return;
+
+            const typeNum  = (pin.id % 2 === 0) ? 1 : 2;
+            const symbolId = isActive ? `ksm-pin-${typeNum}` : `ksm-pin-grey-${typeNum}`;
 
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             g.classList.add('map-pin');
+            if (!isActive) g.classList.add('map-pin--inactive');
             g.setAttribute('data-pin-id', String(pin.id));
-            g.setAttribute('transform', `translate(${pin.svg_x},${pin.svg_y})`);
+            g.setAttribute('transform', `translate(${pos.x},${pos.y})`);
 
-            // Inner group: CSS scale applies here so it doesn't conflict
-            // with the outer group's SVG translate attribute
             const inner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             inner.classList.add('map-pin-inner');
 
             const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-            use.setAttribute('href', `#ksm-pin-${typeNum}`);
-            use.setAttribute('width', '60');
-            use.setAttribute('height', '60');
-            // Centre horizontally, anchor bottom of pin at the coordinate point
-            use.setAttribute('x', '-30');
-            use.setAttribute('y', '-60');
+            use.setAttribute('href', `#${symbolId}`);
+            use.setAttribute('width', '53');
+            use.setAttribute('height', '53');
+            use.setAttribute('x', '-26.5');
+            use.setAttribute('y', '-53');
 
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
             title.textContent = pin.title;
@@ -380,6 +428,41 @@
 
             markersGroup.appendChild(g);
         });
+    }
+
+    /**
+     * Resolve the SVG pixel position for a pin.
+     *
+     * Priority:
+     *   1. Grid-based placement using pin.latitude / pin.longitude + the
+     *      pin's primary geographic_region term (requires coordinate-utils.js).
+     *   2. Legacy server-side position (pin.svg_x / pin.svg_y) as fallback
+     *      for pins that haven't been given real coordinates yet.
+     *
+     * @param  {object} pin  Pin object from the REST API
+     * @returns {{ x: number, y: number } | null}
+     */
+    function resolvePinPosition(pin) {
+        // Attempt coordinate-based placement
+        if (gridManager && pin.latitude != null && pin.longitude != null) {
+            const regionName = pin.taxonomies?.geographic_region?.[0]?.name;
+            if (regionName) {
+                const pos = gridManager.placePin(
+                    pin.latitude,
+                    pin.longitude,
+                    regionName,
+                    pin.id
+                );
+                if (pos) return pos;
+            }
+        }
+
+        // Fall back to legacy server-computed position
+        if (pin.svg_x != null && pin.svg_y != null) {
+            return { x: pin.svg_x, y: pin.svg_y };
+        }
+
+        return null;
     }
 
     // ── Update counts ────────────────────────────────────────────────────────

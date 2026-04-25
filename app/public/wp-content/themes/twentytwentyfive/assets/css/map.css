@@ -385,6 +385,11 @@ body {
 
 .map-pin {
   cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.map-pin--inactive {
+  opacity: 0.4;
 }
 
 /* Scale the inner group so CSS transform doesn't conflict

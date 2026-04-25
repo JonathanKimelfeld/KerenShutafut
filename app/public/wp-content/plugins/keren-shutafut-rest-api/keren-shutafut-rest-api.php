@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Keren Shutafut REST API
  * Description: REST API endpoint for map pins
- * Version: 1.0
+ * Version: 1.1
  */
 
 add_action('rest_api_init', function() {
@@ -13,10 +13,54 @@ add_action('rest_api_init', function() {
     ));
 });
 
+// ── Coordinate helpers ────────────────────────────────────────────────────────
+
+/**
+ * Parse a combined DMS coordinate string to decimal degrees.
+ *
+ * Accepted input: "31° 46′ 43″ N, 35° 14′ 5″ E"
+ * Also handles ASCII variants: apostrophe, straight-quote, letter separators.
+ *
+ * Returns an array ['lat' => float, 'lon' => float] or null on parse failure.
+ *
+ * @param  string $dms_string
+ * @return array|null
+ */
+function ksm_dms_to_decimal( $dms_string ) {
+    if ( empty( $dms_string ) ) return null;
+
+    $parts = array_map( 'trim', explode( ',', $dms_string ) );
+    if ( count( $parts ) < 2 ) return null;
+
+    $parsed = array();
+    foreach ( $parts as $part ) {
+        // Match degrees, minutes, seconds and optional NSEW direction
+        if ( ! preg_match(
+            '/(\d+)\s*[°d]\s*(\d+)\s*[\'′m]\s*([\d.]+)\s*[″"s]?\s*([NSEW])?/iu',
+            $part,
+            $m
+        ) ) {
+            return null;
+        }
+
+        $dec = floatval( $m[1] ) + floatval( $m[2] ) / 60.0 + floatval( $m[3] ) / 3600.0;
+        if ( isset( $m[4] ) && preg_match( '/^[SW]$/i', $m[4] ) ) {
+            $dec = -$dec;
+        }
+        $parsed[] = round( $dec, 6 );
+    }
+
+    if ( count( $parsed ) < 2 ) return null;
+
+    return array( 'lat' => $parsed[0], 'lon' => $parsed[1] );
+}
+
+// ── Regional anchors (legacy fallback) ───────────────────────────────────────
+
 /**
  * Regional anchor points in SVG coordinate space (viewBox 0 0 1920 1080).
- * Positions derived from region label coordinates in israel-map.svg.
- * Spread = max scatter radius for pin distribution within the region.
+ * Used as fallback position when a pin has no real coordinates.
+ * Spread = max scatter radius for pseudo-random distribution within the region.
  */
 function ksm_get_regional_anchors() {
     return array(
@@ -30,7 +74,12 @@ function ksm_get_regional_anchors() {
 
 /**
  * Calculate a stable pseudo-random SVG position for a pin within its region.
- * Uses crc32 of pin ID so the same pin always gets the same coordinates.
+ * Used as fallback for pins that have no geographic coordinates.
+ * Uses crc32 of pin ID so the same pin always gets the same position.
+ *
+ * @param  int    $pin_id
+ * @param  string $region_name  Hebrew region name
+ * @return array  ['x' => float, 'y' => float]
  */
 function ksm_pin_svg_position( $pin_id, $region_name ) {
     $anchors = ksm_get_regional_anchors();
@@ -49,6 +98,8 @@ function ksm_pin_svg_position( $pin_id, $region_name ) {
     );
 }
 
+// ── Main endpoint ─────────────────────────────────────────────────────────────
+
 function keren_shutafut_get_pins() {
     $args = array(
         'post_type'      => 'pin',
@@ -60,9 +111,22 @@ function keren_shutafut_get_pins() {
     $result = array();
 
     foreach ( $pins as $pin ) {
-        $project_link = get_post_meta( $pin->ID, 'project_link', true );
-        $latitude     = get_post_meta( $pin->ID, 'latitude', true );
-        $longitude    = get_post_meta( $pin->ID, 'longitude', true );
+        $project_link    = get_post_meta( $pin->ID, 'project_link',    true );
+        $coordinates_dms = get_post_meta( $pin->ID, 'coordinates',     true );
+        $latitude        = get_post_meta( $pin->ID, 'latitude',        true );
+        $longitude       = get_post_meta( $pin->ID, 'longitude',       true );
+
+        // If decimal lat/lon are missing but a DMS string exists, parse it
+        if ( ( ! $latitude || ! $longitude ) && $coordinates_dms ) {
+            $parsed = ksm_dms_to_decimal( $coordinates_dms );
+            if ( $parsed ) {
+                $latitude  = $parsed['lat'];
+                $longitude = $parsed['lon'];
+            }
+        }
+
+        $lat_float = $latitude  ? floatval( $latitude )  : null;
+        $lon_float = $longitude ? floatval( $longitude ) : null;
 
         $taxonomies = array(
             'geographic_region' => get_taxonomy_terms_with_details( $pin->ID, 'geographic_region' ),
@@ -71,42 +135,50 @@ function keren_shutafut_get_pins() {
             'domains'           => get_taxonomy_terms_with_details( $pin->ID, 'domains' ),
         );
 
-        // Calculate SVG position from primary geographic region
+        // Compute legacy SVG position as fallback (used when the pin has no
+        // real coordinates and coordinate-utils.js GridManager cannot place it)
         $region_terms = wp_get_post_terms( $pin->ID, 'geographic_region', array( 'fields' => 'names' ) );
         $region_name  = ( ! is_wp_error( $region_terms ) && ! empty( $region_terms ) ) ? $region_terms[0] : '';
         $pos          = ksm_pin_svg_position( $pin->ID, $region_name );
 
         $result[] = array(
-            'id'           => $pin->ID,
-            'title'        => $pin->post_title,
-            'content'      => wp_strip_all_tags( $pin->post_content ),
-            'project_link' => $project_link,
-            'latitude'     => $latitude  ? floatval( $latitude )  : null,
-            'longitude'    => $longitude ? floatval( $longitude ) : null,
-            'svg_x'        => $pos['x'],
-            'svg_y'        => $pos['y'],
-            'taxonomies'   => $taxonomies,
+            'id'              => $pin->ID,
+            'title'           => $pin->post_title,
+            'content'         => wp_strip_all_tags( $pin->post_content ),
+            'project_link'    => $project_link ?: null,
+            // Coordinate data: JS GridManager uses latitude/longitude directly.
+            // coordinates_dms is the human-readable source field (optional).
+            'coordinates_dms' => $coordinates_dms ?: null,
+            'latitude'        => $lat_float,
+            'longitude'       => $lon_float,
+            // Legacy fallback: pseudo-random position near region anchor.
+            // Used by displayPins() when latitude/longitude are null.
+            'svg_x'           => $pos['x'],
+            'svg_y'           => $pos['y'],
+            'taxonomies'      => $taxonomies,
         );
     }
 
     return rest_ensure_response( $result );
 }
 
-function get_taxonomy_terms_with_details($post_id, $taxonomy) {
-    $terms = wp_get_post_terms($post_id, $taxonomy);
-    
-    if (is_wp_error($terms) || empty($terms)) {
+// ── Taxonomy helper ───────────────────────────────────────────────────────────
+
+function get_taxonomy_terms_with_details( $post_id, $taxonomy ) {
+    $terms = wp_get_post_terms( $post_id, $taxonomy );
+
+    if ( is_wp_error( $terms ) || empty( $terms ) ) {
         return array();
     }
-    
+
     $result = array();
-    foreach ($terms as $term) {
+    foreach ( $terms as $term ) {
         $result[] = array(
             'term_id' => $term->term_id,
-            'name' => $term->name,
-            'slug' => $term->slug
+            'name'    => $term->name,
+            'slug'    => $term->slug,
         );
     }
-    
+
     return $result;
 }

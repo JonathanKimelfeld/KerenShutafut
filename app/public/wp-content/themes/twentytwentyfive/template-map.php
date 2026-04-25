@@ -6,7 +6,8 @@
 
 get_header();
 
-wp_enqueue_script('keren-map-script', get_template_directory_uri() . '/assets/js/map.js', [], '2.0', true);
+wp_enqueue_script('keren-coordinate-utils', get_template_directory_uri() . '/assets/js/coordinate-utils.js', [], '1.0', true);
+wp_enqueue_script('keren-map-script', get_template_directory_uri() . '/assets/js/map.js', ['keren-coordinate-utils'], '2.0', true);
 wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css/map.css', [], '2.0');
 ?>
 

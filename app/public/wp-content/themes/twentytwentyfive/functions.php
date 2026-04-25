@@ -177,11 +177,20 @@ function keren_shutafut_enqueue_map_assets() {
             array(),
             filemtime(get_template_directory() . '/assets/css/map.css')
         );
-        
+
+        // coordinate-utils.js must load before map.js (provides window.KSM)
+        wp_enqueue_script(
+            'keren-coordinate-utils',
+            get_template_directory_uri() . '/assets/js/coordinate-utils.js',
+            array(),
+            filemtime(get_template_directory() . '/assets/js/coordinate-utils.js'),
+            true
+        );
+
         wp_enqueue_script(
             'keren-map-script',
             get_template_directory_uri() . '/assets/js/map.js',
-            array(),
+            array('keren-coordinate-utils'),
             filemtime(get_template_directory() . '/assets/js/map.js'),
             true
         );
