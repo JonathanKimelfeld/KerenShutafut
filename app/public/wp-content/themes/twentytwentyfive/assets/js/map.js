@@ -537,8 +537,6 @@
             }
         }
 
-        // Slide filter panel out, project panel in
-        filterPanel?.classList.add('panel-hidden');
         panel.classList.add('panel-open');
         panel.setAttribute('aria-hidden', 'false');
     }
@@ -549,7 +547,6 @@
         if (!panel) return;
         panel.classList.remove('panel-open');
         panel.setAttribute('aria-hidden', 'true');
-        filterPanel?.classList.remove('panel-hidden');
     }
 
     // Close on X button
