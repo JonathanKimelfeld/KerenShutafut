@@ -115,6 +115,7 @@ function keren_shutafut_get_pins() {
         $coordinates_dms = get_post_meta( $pin->ID, 'coordinates',     true );
         $latitude        = get_post_meta( $pin->ID, 'latitude',        true );
         $longitude       = get_post_meta( $pin->ID, 'longitude',       true );
+        $operating_org   = get_post_meta( $pin->ID, 'operating_org',   true );
 
         // If decimal lat/lon are missing but a DMS string exists, parse it
         if ( ( ! $latitude || ! $longitude ) && $coordinates_dms ) {
@@ -146,6 +147,7 @@ function keren_shutafut_get_pins() {
             'title'           => $pin->post_title,
             'content'         => wp_strip_all_tags( $pin->post_content ),
             'project_link'    => $project_link ?: null,
+            'operating_org'   => $operating_org ?: null,
             // Coordinate data: JS GridManager uses latitude/longitude directly.
             // coordinates_dms is the human-readable source field (optional).
             'coordinates_dms' => $coordinates_dms ?: null,

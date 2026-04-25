@@ -461,33 +461,168 @@ body {
 .region-label.visible { display: block; }
 
 /* ─────────────────────────────────────────────
-   Modal
+   Filter panel — slide transition
 ───────────────────────────────────────────── */
-.modal-overlay {
+.filter-panel {
+  transition: transform 0.3s ease-in-out;
+}
+.filter-panel.panel-hidden {
+  transform: translateX(110%);
+}
+
+/* ─────────────────────────────────────────────
+   Project details panel
+───────────────────────────────────────────── */
+.project-panel {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  top: 0;
+  right: 0;
+  width: var(--panel-width);
+  min-width: var(--panel-min-width);
+  max-width: var(--panel-max-width);
+  height: 100vh;
+  background: rgba(198, 179, 166, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--panel-radius);
+  border: 1.4px solid var(--ink);
+  z-index: 110;
+  transform: translateX(110%);
+  transition: transform 0.3s ease-in-out;
+  overflow: hidden;
+  font-family: var(--font-main);
+  direction: ltr; /* scrollbar on right */
+}
+
+.project-panel.panel-open {
+  transform: translateX(0);
+}
+
+.project-panel-inner {
+  direction: rtl;
+  padding: var(--panel-pad-v) var(--panel-pad-h) 40px;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(43,74,69,0.35) transparent;
+}
+
+.project-panel-inner::-webkit-scrollbar       { width: 4px; }
+.project-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.project-panel-inner::-webkit-scrollbar-thumb { background: rgba(43,74,69,0.35); border-radius: 2px; }
+
+.project-panel-close {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink);
+  padding: 4px 8px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.project-panel-close:hover { opacity: 1; }
+
+.project-panel-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 16px;
+  padding-left: 36px; /* clear the close button */
+  line-height: 1.3;
+  text-align: right;
+}
+
+.project-panel-divider {
+  height: 0;
+  border: none;
+  border-top: 1.4px solid var(--ink);
+  margin: 14px 0;
+  opacity: 0.5;
+}
+
+.project-panel-description {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.75;
+  margin: 0;
+  text-align: right;
+}
+
+.project-panel-meta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.project-meta-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 200;
-}
-
-.modal-overlay.hidden { display: none; }
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 32px;
-  position: relative;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
   direction: rtl;
-  font-family: var(--font-main);
 }
 
+.project-meta-item .meta-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--ink);
+}
+
+.project-meta-item span {
+  flex: 1;
+  text-align: right;
+}
+
+.project-panel-org {
+  font-size: 14px;
+  color: var(--ink);
+  text-align: right;
+}
+
+.project-panel-org .org-label {
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.project-panel-org .org-name {
+  font-weight: 400;
+}
+
+.project-panel-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  direction: rtl;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.project-panel-link:hover { opacity: 1; text-decoration: underline; }
+.project-panel-link .meta-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Hide placeholder items when empty */
+.project-meta-item.hidden,
+.project-panel-org.hidden,
+.project-panel-link.hidden { display: none; }
+
+/* ── Legacy close button (kept for compatibility) ── */
 .modal-close {
   position: absolute;
   top: 14px;

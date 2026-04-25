@@ -423,7 +423,7 @@
             g.appendChild(title);
             g.addEventListener('click', e => {
                 e.stopPropagation();
-                showPinModal(pin);
+                openProjectPanel(pin);
             });
 
             markersGroup.appendChild(g);
@@ -480,30 +480,93 @@
         });
     }
 
-    // ── Pin modal ────────────────────────────────────────────────────────────
+    // ── Project details panel ────────────────────────────────────────────────
 
-    function showPinModal(pin) {
-        const overlay = document.getElementById('modal-overlay');
-        const titleEl = document.getElementById('modal-title');
-        const bodyEl  = document.getElementById('modal-body');
-        if (!overlay || !titleEl || !bodyEl) return;
+    function openProjectPanel(pin) {
+        const panel      = document.getElementById('project-panel');
+        const filterPanel = document.querySelector('.filter-panel');
+        if (!panel) return;
 
-        titleEl.textContent = pin.title;
+        // Title
+        panel.querySelector('.project-panel-title').textContent = pin.title;
 
-        let html = '';
-        if (pin.content) html += `<p>${pin.content}</p>`;
-        if (pin.project_link) {
-            html += `<p><a href="${pin.project_link}" target="_blank" rel="noopener noreferrer">לאתר הפרויקט &#x2197;</a></p>`;
+        // Description
+        const descEl = panel.querySelector('.project-panel-description');
+        descEl.textContent = pin.content || '';
+        descEl.classList.toggle('hidden', !pin.content);
+
+        // Helper to set a meta row
+        function setMeta(id, value) {
+            const row = document.getElementById(id);
+            if (!row) return;
+            const span = row.querySelector('span');
+            if (value) {
+                span.textContent = value;
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
         }
-        bodyEl.innerHTML = html;
-        overlay.classList.remove('hidden');
+
+        const terms = pin.taxonomies || {};
+        const regionName   = terms.geographic_region?.map(t => t.name).join('، ') || '';
+        const audienceNames = terms.target_audience?.map(t => t.name).join(' | ') || '';
+        const domainNames  = terms.domains?.map(t => t.name).join(' | ') || '';
+        const cycleName    = terms.activity_cycle?.map(t => t.name).join(', ') || '';
+
+        setMeta('pm-region',   regionName);
+        setMeta('pm-audience', audienceNames);
+        setMeta('pm-domains',  domainNames);
+        setMeta('pm-cycle',    cycleName);
+
+        // Operating org
+        const orgEl = document.getElementById('pm-org');
+        if (orgEl) {
+            orgEl.querySelector('.org-name').textContent = pin.operating_org || '';
+            orgEl.classList.toggle('hidden', !pin.operating_org);
+        }
+
+        // Project link
+        const linkEl = document.getElementById('pm-link');
+        if (linkEl) {
+            if (pin.project_link) {
+                linkEl.href = pin.project_link;
+                linkEl.classList.remove('hidden');
+            } else {
+                linkEl.classList.add('hidden');
+            }
+        }
+
+        // Slide filter panel out, project panel in
+        filterPanel?.classList.add('panel-hidden');
+        panel.classList.add('panel-open');
+        panel.setAttribute('aria-hidden', 'false');
     }
 
+    function closeProjectPanel() {
+        const panel       = document.getElementById('project-panel');
+        const filterPanel = document.querySelector('.filter-panel');
+        if (!panel) return;
+        panel.classList.remove('panel-open');
+        panel.setAttribute('aria-hidden', 'true');
+        filterPanel?.classList.remove('panel-hidden');
+    }
+
+    // Close on X button
     document.addEventListener('click', function (e) {
-        if (e.target.classList.contains('modal-close') ||
-            e.target.classList.contains('modal-overlay')) {
-            document.getElementById('modal-overlay')?.classList.add('hidden');
+        if (e.target.classList.contains('project-panel-close')) {
+            closeProjectPanel();
         }
+    });
+
+    // Close on ESC
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeProjectPanel();
+    });
+
+    // Close when clicking the map background (not a pin)
+    document.getElementById('map-container')?.addEventListener('click', function (e) {
+        if (!e.target.closest('.map-pin')) closeProjectPanel();
     });
 
 })();

@@ -135,11 +135,63 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
         </div>
     </aside>
 
-    <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="modal-content">
-            <button class="modal-close" aria-label="סגור">&times;</button>
-            <h2 id="modal-title"></h2>
-            <div id="modal-body"></div>
+    <!-- Project details panel — slides in from right, overlays filter panel -->
+    <div id="project-panel" class="project-panel" role="dialog" aria-modal="true" aria-hidden="true" dir="rtl">
+        <div class="project-panel-inner">
+
+            <button class="project-panel-close" aria-label="סגור">&times;</button>
+
+            <h2 class="project-panel-title"></h2>
+            <div class="project-panel-divider"></div>
+
+            <p class="project-panel-description"></p>
+            <div class="project-panel-divider"></div>
+
+            <ul class="project-panel-meta">
+                <li class="project-meta-item" id="pm-region">
+                    <svg class="meta-icon" viewBox="0 0 29.96 22.03" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path fill="currentColor" d="M14.98,3.04c-6.85-3.04-14.98,2.5-11.42,7.97,0,0,3.46,5.48,6.8,11.02.61,1.01,2.3,1.31,2.88.29,3.15-5.47,2.71-5.73,5.86-11.2,1.88-3.26.12-6.62-4.12-8.08ZM11.32,12.28c-6.91-.09-6.91-8.08,0-8.17,6.91.09,6.91,8.08,0,8.17Z"/>
+                    </svg>
+                    <span></span>
+                </li>
+                <li class="project-meta-item" id="pm-audience">
+                    <svg class="meta-icon" viewBox="0 0 27.45 27.69" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path fill="currentColor" d="M13.89,0c-7.67,0-13.89,6.27-13.89,13.94s6.23,13.75,13.89,13.75,13.56-6.08,13.56-13.75-5.9-13.94-13.56-13.94ZM13.89,20.91c-4.15,0-7.42-2.83-7.42-6.98s3.27-7.8,7.42-7.8,7.57,3.65,7.57,7.8-3.42,6.98-7.57,6.98Z"/>
+                        <path fill="currentColor" d="M17.93,13.94c0,2.39-1.65,4.24-4.04,4.24s-4.06-1.85-4.06-4.24,1.68-3.99,4.06-3.99,4.04,1.61,4.04,3.99Z"/>
+                    </svg>
+                    <span></span>
+                </li>
+                <li class="project-meta-item" id="pm-domains">
+                    <svg class="meta-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path fill="currentColor" d="M93.45,321.02h-9.53c-18.3,0-20.54-15.19-20.54-33.49,0-90.07-2.74-90.07-2.74-180.15,0-18.3,14.52-35.56,32.81-35.56h7.2c18.3,0,26.99,17.26,26.99,35.56,0,90.07,1.45,90.07,1.45,180.15,0,18.3-17.34,33.49-35.63,33.49Z"/>
+                        <path fill="currentColor" d="M311.71,321.02h-5.62c-18.3,0-24.46-15.19-24.46-33.49,0-90.07-2.74-90.07-2.74-180.15,0-18.3,14.52-35.56,32.81-35.56h6.12c18.3,0,28.07,17.26,28.07,35.56,0,90.07,1.45,90.07,1.45,180.15,0,18.3-17.34,33.49-35.63,33.49Z"/>
+                        <path fill="currentColor" d="M208.17,317.12l-7.09-.03c-18.3,0-30.44-11.26-30.44-29.56,0-90.07,4.42-90.07,4.42-180.15,0-18.3,14.82-34.84,33.12-34.84l7.35-.27c18.3,0,28.14,16.81,28.14,35.1,0,90.07-5.07,90.07-5.07,180.15,0,18.3-12.13,29.59-30.42,29.59Z"/>
+                    </svg>
+                    <span></span>
+                </li>
+                <li class="project-meta-item" id="pm-cycle">
+                    <svg class="meta-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8" fill="none"/>
+                        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                    </svg>
+                    <span></span>
+                </li>
+            </ul>
+            <div class="project-panel-divider"></div>
+
+            <div class="project-panel-org" id="pm-org">
+                <span class="org-label">ארגון מפעיל:</span>
+                <span class="org-name"></span>
+            </div>
+
+            <a class="project-panel-link" id="pm-link" href="#" target="_blank" rel="noopener noreferrer">
+                <svg class="meta-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                לאתר הפרויקט
+            </a>
+
         </div>
     </div>
 
