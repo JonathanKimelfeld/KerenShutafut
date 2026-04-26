@@ -173,7 +173,7 @@ body {
 .filter-clear-row {
   border-top: var(--divider);
   padding-top: 16px;
-  margin-top: 0;
+  margin-top: 14px;
   direction: ltr;
   text-align: left;
 }
@@ -209,7 +209,7 @@ body {
 }
 
 .panel-description {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 400;
   color: var(--ink);
   line-height: 1.7;
