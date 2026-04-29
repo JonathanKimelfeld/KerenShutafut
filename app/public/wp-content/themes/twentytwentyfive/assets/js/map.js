@@ -26,6 +26,8 @@
         domains:    [],
     };
 
+    let searchResults = null; // null = no active search, array = current results
+
     let svgVbWidth    = 0;
     let svgVbHeight   = 0;
     const regionBBoxes = {};
@@ -36,6 +38,7 @@
         initMap();
         loadPins();
         setupFilters();
+        setupSearch();
     });
 
     // ── Map init ─────────────────────────────────────────────────────────────
@@ -330,12 +333,121 @@
         document.getElementById('clear-all-filters')?.addEventListener('click', clearAllFilters);
     }
 
+    function setupSearch() {
+        const input = document.getElementById('map-search');
+        const btn   = document.getElementById('map-search-btn');
+        if (!input || !btn) return;
+
+        btn.addEventListener('click', runSearch);
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') runSearch();
+        });
+
+        document.getElementById('back-to-results-btn')
+            ?.addEventListener('click', backToSearchResults);
+    }
+
+    function runSearch() {
+        const input = document.getElementById('map-search');
+        if (!input) return;
+        const query = input.value.trim().toLowerCase();
+        if (!query) return;
+
+        searchResults = allPins
+            .map(pin => ({ pin, score: scorePin(pin, query) }))
+            .filter(r => r.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(r => r.pin);
+
+        displayPins(searchResults);
+        openSearchResults(searchResults, query);
+    }
+
+    function scorePin(pin, query) {
+        const title = (pin.title   || '').toLowerCase();
+        const desc  = (pin.content || '').toLowerCase();
+        if (title === query)       return 100;
+        if (title.includes(query)) return 80;
+        if (desc.includes(query))  return 40;
+        return 0;
+    }
+
+    function getExcerpt(text, query, maxLen) {
+        maxLen = maxLen || 110;
+        const clean = text.replace(/<[^>]*>/g, '');
+        const lower = clean.toLowerCase();
+        const idx   = lower.indexOf(query);
+        if (idx === -1) return clean.slice(0, maxLen) + (clean.length > maxLen ? '…' : '');
+        const start   = Math.max(0, idx - 35);
+        const end     = Math.min(clean.length, idx + query.length + 75);
+        return (start > 0 ? '…' : '') + clean.slice(start, end) + (end < clean.length ? '…' : '');
+    }
+
+    function openSearchResults(results, query) {
+        const panel = document.getElementById('project-panel');
+        if (!panel) return;
+
+        document.getElementById('search-results-title').textContent =
+            'תוצאות חיפוש "' + query + '" (' + results.length + ')';
+
+        const list = document.getElementById('search-results-list');
+        list.innerHTML = '';
+
+        if (results.length === 0) {
+            const li = document.createElement('li');
+            li.className = 'search-result-empty';
+            li.textContent = 'לא נמצאו תוצאות';
+            list.appendChild(li);
+        } else {
+            results.forEach(function (pin) {
+                const li = document.createElement('li');
+                li.className = 'search-result-item';
+
+                const titleBtn = document.createElement('button');
+                titleBtn.className = 'search-result-title';
+                titleBtn.textContent = pin.title;
+                titleBtn.addEventListener('click', function () { openPinFromSearch(pin); });
+
+                const excerpt = document.createElement('p');
+                excerpt.className = 'search-result-excerpt';
+                excerpt.textContent = getExcerpt(pin.content || '', query);
+
+                li.appendChild(titleBtn);
+                if (pin.content) li.appendChild(excerpt);
+                list.appendChild(li);
+            });
+        }
+
+        panel.classList.remove('panel-pin-from-search');
+        panel.classList.add('panel-search-mode', 'panel-open');
+        panel.setAttribute('aria-hidden', 'false');
+    }
+
+    function openPinFromSearch(pin) {
+        fillPinDetails(pin);
+        const panel = document.getElementById('project-panel');
+        if (!panel) return;
+        panel.classList.remove('panel-search-mode');
+        panel.classList.add('panel-pin-from-search', 'panel-open');
+        panel.setAttribute('aria-hidden', 'false');
+    }
+
+    function backToSearchResults() {
+        if (!searchResults) return;
+        const query = (document.getElementById('map-search')?.value || '').trim().toLowerCase();
+        openSearchResults(searchResults, query);
+    }
+
     function clearAllFilters() {
         activeFilters = { geographic: null, cycle: null, audience: [], domains: [] };
+        const searchInput = document.getElementById('map-search');
+        if (searchInput) searchInput.value = '';
+        searchResults = null;
         document.querySelectorAll('.filter-options-grid input[type="radio"]')   .forEach(i => i.checked = false);
         document.querySelectorAll('.filter-options-grid input[type="checkbox"]').forEach(i => i.checked = false);
         syncMapRegionSelection(null);
         zoomToRegion(null);
+        closeProjectPanel();
         applyFilters();
     }
 
@@ -360,8 +472,6 @@
                 activeFilters.domains.every(t => hasTerm(pin, 'domains', t))
             );
         }
-
-        console.log(`Filtered: ${pins.length} / ${allPins.length} pins`);
         displayPins(pins);
         updateCounts(pins);
     }
@@ -482,71 +592,63 @@
 
     // ── Project details panel ────────────────────────────────────────────────
 
-    function openProjectPanel(pin) {
-        const panel      = document.getElementById('project-panel');
-        const filterPanel = document.querySelector('.filter-panel');
+    function fillPinDetails(pin) {
+        const panel = document.getElementById('project-panel');
         if (!panel) return;
 
-        // Title
         panel.querySelector('.project-panel-title').textContent = pin.title;
 
-        // Description
         const descEl = panel.querySelector('.project-panel-description');
         descEl.textContent = pin.content || '';
         descEl.classList.toggle('hidden', !pin.content);
 
-        // Helper to set a meta row
         function setMeta(id, value) {
             const row = document.getElementById(id);
             if (!row) return;
             const span = row.querySelector('span');
-            if (value) {
-                span.textContent = value;
-                row.classList.remove('hidden');
-            } else {
-                row.classList.add('hidden');
-            }
+            if (value) { span.textContent = value; row.classList.remove('hidden'); }
+            else        { row.classList.add('hidden'); }
         }
 
         const terms = pin.taxonomies || {};
-        const regionName   = terms.geographic_region?.map(t => t.name).join('، ') || '';
-        const audienceNames = terms.target_audience?.map(t => t.name).join(' | ') || '';
-        const domainNames  = terms.domains?.map(t => t.name).join(' | ') || '';
-        const cycleName    = terms.activity_cycle?.map(t => t.name).join(', ') || '';
+        setMeta('pm-region',   (terms.geographic_region || []).map(t => t.name).join('، '));
+        setMeta('pm-audience', (terms.target_audience   || []).map(t => t.name).join(' | '));
+        setMeta('pm-domains',  (terms.domains           || []).map(t => t.name).join(' | '));
+        setMeta('pm-cycle',    (terms.activity_cycle    || []).map(t => t.name).join(', '));
 
-        setMeta('pm-region',   regionName);
-        setMeta('pm-audience', audienceNames);
-        setMeta('pm-domains',  domainNames);
-        setMeta('pm-cycle',    cycleName);
-
-        // Operating org
         const orgEl = document.getElementById('pm-org');
         if (orgEl) {
             orgEl.querySelector('.org-name').textContent = pin.operating_org || '';
             orgEl.classList.toggle('hidden', !pin.operating_org);
         }
 
-        // Project link
         const linkEl = document.getElementById('pm-link');
         if (linkEl) {
-            if (pin.project_link) {
-                linkEl.href = pin.project_link;
-                linkEl.classList.remove('hidden');
-            } else {
-                linkEl.classList.add('hidden');
-            }
+            if (pin.project_link) { linkEl.href = pin.project_link; linkEl.classList.remove('hidden'); }
+            else                   { linkEl.classList.add('hidden'); }
         }
+    }
 
+    function openProjectPanel(pin) {
+        const panel = document.getElementById('project-panel');
+        if (!panel) return;
+        fillPinDetails(pin);
+        const wasSearch = searchResults !== null;
+        searchResults = null;
+        panel.classList.remove('panel-search-mode', 'panel-pin-from-search');
         panel.classList.add('panel-open');
         panel.setAttribute('aria-hidden', 'false');
+        if (wasSearch) applyFilters(); // restore all pins on map
     }
 
     function closeProjectPanel() {
-        const panel       = document.getElementById('project-panel');
-        const filterPanel = document.querySelector('.filter-panel');
+        const panel = document.getElementById('project-panel');
         if (!panel) return;
-        panel.classList.remove('panel-open');
+        const wasSearch = searchResults !== null;
+        searchResults = null;
+        panel.classList.remove('panel-open', 'panel-search-mode', 'panel-pin-from-search');
         panel.setAttribute('aria-hidden', 'true');
+        if (wasSearch) applyFilters(); // restore all pins on map
     }
 
     // Close on X button
