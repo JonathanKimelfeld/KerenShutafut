@@ -16,6 +16,12 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
     <!-- Full-screen map (underlies the panel) -->
     <div id="map-container" aria-hidden="true">
         <div id="map"></div>
+        <button id="map-reset-btn" aria-label="חזור למבט כולל">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M1 1h4v4M13 1h-4v4M1 13h4v-4M13 13h-4v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            הצג מפה מלאה
+        </button>
     </div>
 
     <!-- Filter panel — fixed right overlay -->
@@ -43,10 +49,10 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                 </div>
             </div>
 
-            <!-- קהל יעד — multi-select -->
+            <!-- קהל יעד — single-select radio -->
             <div class="filter-group collapsible-group">
                 <div class="filter-section-header collapsible-header" role="button" tabindex="0" aria-expanded="true">
-                    <svg class="section-icon" width="28" height="28" viewBox="0 0 27.45 27.69" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <svg class="section-icon" width="18" height="18" viewBox="0 0 27.45 27.69" style="width:18px;height:18px;" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path fill="#2b4a45" d="M13.89,0c-7.67,0-13.89,6.27-13.89,13.94s6.23,13.75,13.89,13.75,13.56-6.08,13.56-13.75-5.9-13.94-13.56-13.94ZM13.89,20.91c-4.15,0-7.42-2.83-7.42-6.98s3.27-7.8,7.42-7.8,7.57,3.65,7.57,7.8-3.42,6.98-7.57,6.98Z"/>
                         <path fill="#2b4a45" d="M17.93,13.94c0,2.39-1.65,4.24-4.04,4.24s-4.06-1.85-4.06-4.24,1.68-3.99,4.06-3.99,4.04,1.61,4.04,3.99Z"/>
                     </svg>
@@ -56,7 +62,7 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                     </svg>
                 </div>
                 <div class="filter-collapsible-body">
-                <div class="filter-options-grid" data-filter-type="target_audience" role="group" aria-label="בחר קהל יעד">
+                <div class="filter-options-grid" data-filter-type="target_audience" role="radiogroup" aria-label="בחר קהל יעד">
                     <?php
                     $audiences = get_terms(['taxonomy' => 'target_audience', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
                     $label_overrides = [ 'אנשי מקצוע ופעילים' => 'אקטיביסטים' ];
@@ -67,7 +73,7 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                             $label = $label_overrides[ $a->name ] ?? $a->name;
                             $id = 'ta-' . sanitize_title($a->name);
                             printf(
-                                '<label class="filter-option" for="%1$s"><input type="checkbox" id="%1$s" data-term="%2$s" value="%2$s"><span class="option-text">%3$s</span></label>',
+                                '<label class="filter-option" for="%1$s"><input type="radio" id="%1$s" name="target_audience" data-term="%2$s" value="%2$s"><span class="option-text">%3$s</span></label>',
                                 esc_attr($id), esc_attr($a->name), esc_html($label)
                             );
                         }
@@ -80,8 +86,8 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
             <!-- מיקום — single-select radio -->
             <div class="filter-group collapsible-group">
                 <div class="filter-section-header collapsible-header" role="button" tabindex="0" aria-expanded="true">
-                    <svg class="section-icon" width="24" height="22" viewBox="0 0 29.96 22.03" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path fill="#2b4a45" d="M14.98,3.04c-6.85-3.04-14.98,2.5-11.42,7.97,0,0,3.46,5.48,6.8,11.02.61,1.01,2.3,1.31,2.88.29,3.15-5.47,2.71-5.73,5.86-11.2,1.88-3.26.12-6.62-4.12-8.08ZM11.32,12.28c-6.91-.09-6.91-8.08,0-8.17,6.91.09,6.91,8.08,0,8.17Z"/>
+                    <svg class="section-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path fill="#2b4a45" d="M248.25,83.64c-80.65-39.85-183.1,42.78-141.2,114.45,0,0,36.66,55.99,74.07,111.39,7.15,13.21,35.98,13.64,42.86.33,37.59-54.64,32.89-57.76,69.22-113.25,22.07-42.72,4.95-93.78-44.94-112.92ZM200,210.82c-81.26-1.18-81.25-99.24,0-100.42,81.25,1.18,81.24,99.24,0,100.42Z"/>
                     </svg>
                     <h2 class="filter-group-title">מיקום</h2>
                     <svg class="chevron-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -137,7 +143,7 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                 </div>
             </div>
 
-            <!-- תחום — multi-select -->
+            <!-- תחום — single-select radio -->
             <div class="filter-group filter-group--last collapsible-group">
                 <div class="filter-section-header collapsible-header" role="button" tabindex="0" aria-expanded="true">
                     <svg class="section-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -151,14 +157,14 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                     </svg>
                 </div>
                 <div class="filter-collapsible-body">
-                <div class="filter-options-grid" data-filter-type="domains" role="group" aria-label="בחר תחום">
+                <div class="filter-options-grid" data-filter-type="domains" role="radiogroup" aria-label="בחר תחום">
                     <?php
                     $domains = get_terms(['taxonomy' => 'domains', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
                     if (!is_wp_error($domains)) {
                         foreach ($domains as $d) {
                             $id = 'dm-' . sanitize_title($d->name);
                             printf(
-                                '<label class="filter-option" for="%1$s"><input type="checkbox" id="%1$s" data-term="%2$s" value="%2$s"><span class="option-text">%3$s</span></label>',
+                                '<label class="filter-option" for="%1$s"><input type="radio" id="%1$s" name="domains" data-term="%2$s" value="%2$s"><span class="option-text">%3$s</span></label>',
                                 esc_attr($id), esc_attr($d->name), esc_html($d->name)
                             );
                         }
@@ -185,7 +191,12 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
     <div id="project-panel" class="project-panel" role="dialog" aria-modal="true" aria-hidden="true" dir="rtl">
         <div class="project-panel-inner">
 
-            <button class="project-panel-close" aria-label="סגור">&times;</button>
+            <button class="project-panel-close" aria-label="סגור">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <line x1="1" y1="1" x2="15" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="15" y1="1" x2="1" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
 
             <!-- Search results view (active when panel-search-mode) -->
             <div class="search-results-view" id="search-results-view">
@@ -202,7 +213,10 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                 חזרה לתוצאות
             </button>
 
-            <h2 class="project-panel-title"></h2>
+            <h2 class="project-panel-title">
+                <img class="project-title-icon" src="<?php echo get_template_directory_uri(); ?>/assets/images/project_icon.svg" alt="" aria-hidden="true">
+                <span class="project-title-text"></span>
+            </h2>
             <div class="project-panel-divider"></div>
 
             <p class="project-panel-description"></p>
@@ -210,8 +224,8 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
 
             <ul class="project-panel-meta">
                 <li class="project-meta-item" id="pm-region">
-                    <svg class="meta-icon" viewBox="0 0 29.96 22.03" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path fill="currentColor" d="M14.98,3.04c-6.85-3.04-14.98,2.5-11.42,7.97,0,0,3.46,5.48,6.8,11.02.61,1.01,2.3,1.31,2.88.29,3.15-5.47,2.71-5.73,5.86-11.2,1.88-3.26.12-6.62-4.12-8.08ZM11.32,12.28c-6.91-.09-6.91-8.08,0-8.17,6.91.09,6.91,8.08,0,8.17Z"/>
+                    <svg class="meta-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path fill="currentColor" d="M248.25,83.64c-80.65-39.85-183.1,42.78-141.2,114.45,0,0,36.66,55.99,74.07,111.39,7.15,13.21,35.98,13.64,42.86.33,37.59-54.64,32.89-57.76,69.22-113.25,22.07-42.72,4.95-93.78-44.94-112.92ZM200,210.82c-81.26-1.18-81.25-99.24,0-100.42,81.25,1.18,81.24,99.24,0,100.42Z"/>
                     </svg>
                     <span></span>
                 </li>

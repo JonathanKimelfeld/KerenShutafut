@@ -5,13 +5,13 @@
 (function () {
     'use strict';
 
-    // ── Per-region zoom scales ───────────────────────────────────────────────
-    const ZOOM_LEVELS = {
-        'צפון':      4.5,
-        'כרמל':      5.0,
-        'מרכז':      4.0,
-        'ירושלים':   6.0,
-        'דרום':      3.5,
+    // ── Zoom rectangle layer IDs (SVG guides defining exact viewport per region)
+    const ZOOM_LAYER_MAP = {
+        'צפון':    'north_zoom',
+        'כרמל':    'carmel_zoom',
+        'מרכז':    'center_zoom',
+        'ירושלים': 'jerusalem_zoom',
+        'דרום':    'south_zoom',
     };
 
     // ── State ────────────────────────────────────────────────────────────────
@@ -22,15 +22,15 @@
     let activeFilters = {
         geographic: null,
         cycle:      null,
-        audience:   [],
-        domains:    [],
+        audience:   null,
+        domains:    null,
     };
 
     let searchResults = null; // null = no active search, array = current results
 
-    let svgVbWidth    = 0;
-    let svgVbHeight   = 0;
-    const regionBBoxes = {};
+    let svgVbWidth  = 0;
+    let svgVbHeight = 0;
+    const zoomRects = {};
 
     // ── Boot ─────────────────────────────────────────────────────────────────
 
@@ -54,7 +54,7 @@
     async function loadSVGMap() {
         const mapContainer = document.getElementById('map');
         try {
-            const response = await fetch('/wp-content/themes/twentytwentyfive/assets/images/israel-map.svg');
+            const response = await fetch('/wp-content/themes/twentytwentyfive/assets/images/background-map.svg');
             const svgText  = await response.text();
             mapContainer.innerHTML = svgText;
 
@@ -67,8 +67,9 @@
                 svgVbHeight = svg.viewBox.baseVal.height;
             }
 
+            setupMapElements();
             setupRegionInteractivity();
-            cacheRegionCenters();
+            cacheZoomRects();
 
             // Initialise the grid manager now that region elements are in the DOM
             if (window.KSM?.GridManager) {
@@ -107,92 +108,94 @@
                 mapSvg.prepend(defs);
             }
 
+            function resolveAndInject(svgDoc, classAttrMap, idPrefix) {
+                svgDoc.querySelectorAll('[class]').forEach(el => {
+                    const attrs = classAttrMap[el.getAttribute('class')];
+                    if (attrs) {
+                        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+                        el.removeAttribute('class');
+                    }
+                });
+                // Remove <style> and <defs> — gradients are replaced with flat colours above
+                svgDoc.querySelectorAll('style, defs').forEach(el => el.remove());
+
+                const svg      = svgDoc.querySelector('svg');
+                const viewBox  = svg?.getAttribute('viewBox') || '0 0 10 10';
+                const content  = svg?.innerHTML || '';
+
+                [1, 2].forEach(i => {
+                    const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
+                    sym.id = `${idPrefix}-${i}`;
+                    sym.setAttribute('viewBox', viewBox);
+                    sym.innerHTML = content;
+                    defs.appendChild(sym);
+                });
+            }
+
             // ── Colored pin ───────────────────────────────────────────────────
-            const resp = await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin.svg');
-            const text = await resp.text();
-            const pinDoc = parser.parseFromString(text, 'image/svg+xml');
-
-            const fillMap = {
-                'cls-1': '#fff4e3',
-                'cls-2': 'rgba(10,5,0,0.15)',
-                'cls-3': 'rgba(10,5,0,0.20)',
-                'cls-4': '#a1422b',
-            };
-            pinDoc.querySelectorAll('[class]').forEach(el => {
-                const cls = el.getAttribute('class');
-                if (fillMap[cls]) {
-                    el.setAttribute('fill', fillMap[cls]);
-                    el.removeAttribute('class');
-                }
-            });
-
-            ['pin_left', 'pin_right'].forEach((layerId, i) => {
-                const g = pinDoc.getElementById(layerId);
-                if (!g) return;
-                const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
-                sym.id = `ksm-pin-${i + 1}`;
-                sym.setAttribute('viewBox', '0 0 184.55 184.55');
-                sym.innerHTML = g.innerHTML;
-                defs.appendChild(sym);
-            });
+            const pinDoc = parser.parseFromString(
+                await (await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin.svg')).text(),
+                'image/svg+xml'
+            );
+            resolveAndInject(pinDoc, {
+                'cls-1': { fill: '#fff4e3' },
+                'cls-2': { fill: 'rgba(10,5,0,0.15)' },
+                'cls-3': { fill: '#a1422b' },
+            }, 'ksm-pin');
 
             // ── Grey pin ──────────────────────────────────────────────────────
-            const greyResp = await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin_export_grey.svg');
-            const greyText = await greyResp.text();
-            const greyDoc  = parser.parseFromString(greyText, 'image/svg+xml');
-
-            // Resolve class-based fills/opacities inline (gradients replaced with flat colours)
-            const greyAttrMap = {
+            const greyDoc = parser.parseFromString(
+                await (await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin_export_grey.svg')).text(),
+                'image/svg+xml'
+            );
+            resolveAndInject(greyDoc, {
                 'cls-1': { fill: 'rgba(0,0,0,0.08)' },
-                'cls-2': { fill: 'rgba(0,0,0,0.08)' },
-                'cls-3': { fill: '#191919', opacity: '0.43' },
-                'cls-4': { fill: '#fcf3e4' },
-                'cls-5': { opacity: '0.74' },
-            };
-            greyDoc.querySelectorAll('[class]').forEach(el => {
-                const attrs = greyAttrMap[el.getAttribute('class')];
-                if (attrs) {
-                    Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
-                    el.removeAttribute('class');
-                }
-            });
-
-            ['pin_grey_left', 'pin_grey_right'].forEach((layerId, i) => {
-                const g = greyDoc.getElementById(layerId);
-                if (!g) return;
-                const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
-                sym.id = `ksm-pin-grey-${i + 1}`;
-                sym.setAttribute('viewBox', '0 0 184.55 184.55');
-                sym.innerHTML = g.innerHTML;
-                defs.appendChild(sym);
-            });
+                'cls-2': { fill: '#727070' },
+                'cls-3': { fill: '#bcbcbc', opacity: '0.49' },
+                'cls-4': { fill: '#adadad' },
+            }, 'ksm-pin-grey');
 
         } catch (err) {
             console.error('Error loading pin symbols:', err);
         }
     }
 
-    // ── Zoom: coordinate helpers ─────────────────────────────────────────────
+    // ── Map element setup ────────────────────────────────────────────────────
 
-    function cacheRegionCenters() {
-        document.querySelectorAll('.clickable-region[data-region]').forEach(region => {
-            const bbox = region.getBBox();
-            regionBBoxes[region.dataset.region] = {
-                cx: bbox.x + bbox.width  / 2,
-                cy: bbox.y + bbox.height / 2,
-            };
+    function setupMapElements() {
+        const svg = document.querySelector('#map svg');
+        if (!svg) return;
+
+        const clickPadMap = {
+            'north_click_pad':     'צפון',
+            'carmel_click_pad':    'כרמל',
+            'South_click_pad':     'דרום',
+            'center_click_pad':    'מרכז',
+            'jerusalem_click_pad': 'ירושלים',
+        };
+        Object.entries(clickPadMap).forEach(([id, region]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('clickable-region');
+            el.setAttribute('data-region', region);
         });
+
+        if (!document.getElementById('pin-markers')) {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.id = 'pin-markers';
+            svg.appendChild(g);
+        }
     }
 
-    function svgToViewport(svgCx, svgCy) {
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const scaleX = vw / svgVbWidth;
-        const scaleY = vh / svgVbHeight;
-        const s  = Math.max(scaleX, scaleY);
-        const ox = (vw - svgVbWidth  * s) / 2;
-        const oy = (vh - svgVbHeight * s) / 2;
-        return { x: svgCx * s + ox, y: svgCy * s + oy };
+    // ── Zoom: cache bounding boxes from SVG zoom layers ──────────────────────
+
+    function cacheZoomRects() {
+        Object.entries(ZOOM_LAYER_MAP).forEach(([region, layerId]) => {
+            const el = document.getElementById(layerId);
+            if (!el) return;
+            zoomRects[region] = el.getBBox(); // capture before hiding
+            el.style.display = 'none';
+        });
     }
 
     // ── Zoom: CSS transform ──────────────────────────────────────────────────
@@ -204,30 +207,44 @@
         if (!regionName) {
             svg.style.transition = 'transform 600ms cubic-bezier(0.4, 0.0, 0.2, 1)';
             svg.style.transform  = 'translate(0px, 0px) scale(1)';
+            document.getElementById('map-container')?.classList.remove('zoomed');
             return;
         }
 
-        const cached = regionBBoxes[regionName];
-        if (!cached || svgVbWidth === 0) return;
+        const rect = zoomRects[regionName];
+        if (!rect || svgVbWidth === 0) return;
 
-        const pos        = svgToViewport(cached.cx, cached.cy);
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        const baseScale   = Math.max(vw / svgVbWidth, vh / svgVbHeight);
+        const baseOffsetX = (vw - svgVbWidth  * baseScale) / 2;
+        const baseOffsetY = (vh - svgVbHeight * baseScale) / 2;
+
         const panelEl    = document.querySelector('.filter-panel');
-        const panelWidth = panelEl ? panelEl.offsetWidth : window.innerWidth * 0.22;
-        const targetX    = (window.innerWidth - panelWidth) / 2;
-        const targetY    = window.innerHeight / 2;
-        const s          = ZOOM_LEVELS[regionName] ?? 4.0;
-        const dx         = targetX - pos.x * s;
-        const dy         = targetY - pos.y * s;
+        const panelWidth = panelEl ? panelEl.offsetWidth : vw * 0.22;
+        const availW     = vw - panelWidth;
+
+        const cx = (rect.x + rect.width  / 2) * baseScale + baseOffsetX;
+        const cy = (rect.y + rect.height / 2) * baseScale + baseOffsetY;
+
+        const s  = Math.min(availW / (rect.width * baseScale), vh / (rect.height * baseScale));
+
+        const dx = availW / 2 - cx * s;
+        const dy = vh     / 2 - cy * s;
 
         svg.style.transformOrigin = '0 0';
         svg.style.transition      = 'transform 600ms cubic-bezier(0.4, 0.0, 0.2, 1)';
         svg.style.transform       = `translate(${dx}px, ${dy}px) scale(${s})`;
+        document.getElementById('map-container')?.classList.add('zoomed');
     }
 
-    // ── Region interactivity ─────────────────────────────────────────────────
+        // ── Region interactivity ─────────────────────────────────────────────────
 
     function syncMapRegionSelection(regionName) {
-        document.querySelectorAll('.clickable-region').forEach(r => r.classList.remove('selected'));
+        document.querySelectorAll('.clickable-region').forEach(r => {
+            r.classList.remove('selected');
+        });
         document.querySelectorAll('.region-label').forEach(l => l.classList.remove('visible'));
 
         if (regionName) {
@@ -310,27 +327,37 @@
             });
         });
 
-        document.querySelectorAll('[data-filter-type="target_audience"] input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', function () {
-                const term = this.dataset.term;
-                activeFilters.audience = this.checked
-                    ? [...new Set([...activeFilters.audience, term])]
-                    : activeFilters.audience.filter(a => a !== term);
+        document.querySelectorAll('[data-filter-type="target_audience"] input[type="radio"]').forEach(input => {
+            input.addEventListener('click', function () {
+                if (activeFilters.audience === this.dataset.term) {
+                    this.checked = false;
+                    activeFilters.audience = null;
+                } else {
+                    activeFilters.audience = this.dataset.term;
+                }
                 applyFilters();
             });
         });
 
-        document.querySelectorAll('[data-filter-type="domains"] input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', function () {
-                const term = this.dataset.term;
-                activeFilters.domains = this.checked
-                    ? [...new Set([...activeFilters.domains, term])]
-                    : activeFilters.domains.filter(d => d !== term);
+        document.querySelectorAll('[data-filter-type="domains"] input[type="radio"]').forEach(input => {
+            input.addEventListener('click', function () {
+                if (activeFilters.domains === this.dataset.term) {
+                    this.checked = false;
+                    activeFilters.domains = null;
+                } else {
+                    activeFilters.domains = this.dataset.term;
+                }
                 applyFilters();
             });
         });
 
         document.getElementById('clear-all-filters')?.addEventListener('click', clearAllFilters);
+
+        document.getElementById('map-reset-btn')?.addEventListener('click', function () {
+            setGeoFilter(null);
+            syncMapRegionSelection(null);
+            applyFilters();
+        });
     }
 
     function setupSearch() {
@@ -439,12 +466,11 @@
     }
 
     function clearAllFilters() {
-        activeFilters = { geographic: null, cycle: null, audience: [], domains: [] };
+        activeFilters = { geographic: null, cycle: null, audience: null, domains: null };
         const searchInput = document.getElementById('map-search');
         if (searchInput) searchInput.value = '';
         searchResults = null;
-        document.querySelectorAll('.filter-options-grid input[type="radio"]')   .forEach(i => i.checked = false);
-        document.querySelectorAll('.filter-options-grid input[type="checkbox"]').forEach(i => i.checked = false);
+        document.querySelectorAll('.filter-options-grid input[type="radio"]').forEach(i => i.checked = false);
         syncMapRegionSelection(null);
         zoomToRegion(null);
         closeProjectPanel();
@@ -462,15 +488,11 @@
         if (activeFilters.cycle) {
             pins = pins.filter(pin => hasTerm(pin, 'activity_cycle', activeFilters.cycle));
         }
-        if (activeFilters.audience.length > 0) {
-            pins = pins.filter(pin =>
-                activeFilters.audience.every(t => hasTerm(pin, 'target_audience', t))
-            );
+        if (activeFilters.audience) {
+            pins = pins.filter(pin => hasTerm(pin, 'target_audience', activeFilters.audience));
         }
-        if (activeFilters.domains.length > 0) {
-            pins = pins.filter(pin =>
-                activeFilters.domains.every(t => hasTerm(pin, 'domains', t))
-            );
+        if (activeFilters.domains) {
+            pins = pins.filter(pin => hasTerm(pin, 'domains', activeFilters.domains));
         }
         displayPins(pins);
         updateCounts(pins);
@@ -520,10 +542,10 @@
 
             const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
             use.setAttribute('href', `#${symbolId}`);
-            use.setAttribute('width', '53');
-            use.setAttribute('height', '53');
-            use.setAttribute('x', '-26.5');
-            use.setAttribute('y', '-53');
+            use.setAttribute('width', '68.05');
+            use.setAttribute('height', '68.05');
+            use.setAttribute('x', '-34.03');
+            use.setAttribute('y', '-68.05');
 
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
             title.textContent = pin.title;
@@ -596,7 +618,7 @@
         const panel = document.getElementById('project-panel');
         if (!panel) return;
 
-        panel.querySelector('.project-panel-title').textContent = pin.title;
+        panel.querySelector('.project-title-text').textContent = pin.title;
 
         const descEl = panel.querySelector('.project-panel-description');
         descEl.textContent = pin.content || '';

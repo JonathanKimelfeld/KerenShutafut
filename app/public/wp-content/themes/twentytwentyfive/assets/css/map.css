@@ -56,13 +56,22 @@
   --panel-max-width: 460px;
   --panel-pad-v:     36px;
   --panel-pad-h:     28px;
-  --panel-radius:    87px 0 0 87px; /* rounded left edge, flush right */
+  --panel-radius:    50px 0 0 50px; /* rounded left edge, flush right */
 
   /* Spacing */
   --title-to-section:  20px;
   --header-to-options: 6px;
   --row-gap:           14px;
-  --section-gap:       16px;
+  --section-gap:       14px;
+}
+
+/* ─────────────────────────────────────────────
+   Global radio button style
+───────────────────────────────────────────── */
+input[type="radio"]:checked {
+  accent-color: rgb(150, 72, 50);
+  outline: 1.5px solid transparent;
+  box-shadow: 0 0 0 1.5px rgb(150, 72, 50), inset 0 0 0 1.5px white;
 }
 
 /* ─────────────────────────────────────────────
@@ -111,6 +120,40 @@ body {
   transform-origin: 0 0;
 }
 
+/* Reset zoom button */
+#map-reset-btn {
+  position: fixed;
+  bottom: 32px;
+  left: 32px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-bg);
+  border: 2px solid var(--ink);
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+#map-container.zoomed #map-reset-btn {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#map-reset-btn:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+}
+
+
 /* ─────────────────────────────────────────────
    Filter panel — fixed right overlay
 ───────────────────────────────────────────── */
@@ -121,7 +164,7 @@ body {
   width: var(--panel-width);
   min-width: var(--panel-min-width);
   max-width: var(--panel-max-width);
-  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.28), -6px 0 18px rgba(0, 0, 0, 0.16);
+  box-shadow: -13px 0 45px rgba(0, 0, 0, 0.20), -4px 0 13px rgba(0, 0, 0, 0.12);
   height: 100vh;
   background: var(--panel-bg);
   backdrop-filter: blur(8px);
@@ -224,7 +267,7 @@ body {
    Filter sections
 ───────────────────────────────────────────── */
 .filter-group {
-  padding-bottom: 8px;
+  padding-bottom: var(--section-gap);
   border-bottom: var(--divider);
   margin-bottom: var(--section-gap);
 }
@@ -266,9 +309,8 @@ body {
 ───────────────────────────────────────────── */
 .filter-options-grid {
   display: grid;
-  /* Each column is at least as wide as its content; surplus space is shared equally */
-  grid-template-columns: repeat(3, max-content);
-  justify-content: start;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
   row-gap: var(--row-gap);
   column-gap: 10px;
   direction: rtl;
@@ -354,21 +396,9 @@ body {
 }
 
 .filter-option input[type="radio"]:checked {
-  background: var(--ink);
+  background: rgb(150, 72, 50);
   border-color: var(--ink);
-}
-
-.filter-option input[type="radio"]:checked::after {
-  content: '';
-  position: absolute;
-  left: 3.2px;
-  top: 1px;
-  width: 5.5px;
-  height: 8.5px;
-  border: 2px solid white;
-  border-top: none;
-  border-left: none;
-  transform: rotate(45deg);
+  box-shadow: inset 0 0 0 1.5px var(--panel-bg);
 }
 
 /* Shared focus ring */
@@ -381,21 +411,40 @@ body {
 /* ─────────────────────────────────────────────
    SVG region interaction
 ───────────────────────────────────────────── */
+/* ── Zoom guide rectangles: hidden but still participate in layout for getBBox ── */
+#north_zoom, #carmel_zoom, #center_zoom, #jerusalem_zoom, #south_zoom {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Click pad overlays: hidden by default ── */
+/* These are the cls-13 semi-transparent overlay paths inside each *_click_pad group.
+   Using the ID suffix selector so hiding applies immediately on SVG render,
+   before JS has a chance to add the .clickable-region class. */
+[id$="_click_pad"] path {
+  display: none;
+}
+
+/* Show the overlay on hover */
+[id$="_click_pad"]:hover path {
+  display: block;
+}
+
+/* Show the overlay when selected + heavier stroke for "floating" outline */
+.clickable-region.selected path {
+  display: block;
+  stroke: #2b4a45;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* Drop shadow on the selected region group (elevation / floating effect) */
+.clickable-region.selected {
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.40));
+}
+
 .clickable-region {
   cursor: pointer;
-  transition: opacity 0.25s;
-}
-
-.clickable-region:hover { opacity: 0.8; }
-
-.clickable-region.selected {
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.28));
-}
-
-.clickable-region.selected .cls-9 {
-  fill: rgb(194, 180, 167);
-  stroke: #3d5956;
-  stroke-width: 8px;
 }
 
 /* ── Individual map pins ── */
@@ -409,7 +458,7 @@ body {
 }
 
 .map-pin--inactive {
-  opacity: 0.4;
+  opacity: 1;
 }
 
 /* Scale the inner group so CSS transform doesn't conflict
@@ -494,7 +543,7 @@ body {
   border-radius: var(--panel-radius);
   border: 2px solid var(--ink);
   border-right: none;
-  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.28), -6px 0 18px rgba(0, 0, 0, 0.16);
+  box-shadow: -13px 0 45px rgba(0, 0, 0, 0.20), -4px 0 13px rgba(0, 0, 0, 0.12);
   box-sizing: border-box;
   z-index: 90;
   transform: translateX(100%);
@@ -525,28 +574,38 @@ body {
 
 .project-panel-close {
   position: absolute;
-  top: 18px;
-  left: 22px;
+  top: 16px;
+  left: 20px;
   background: none;
   border: none;
-  font-size: 25px;
-  line-height: 1;
   cursor: pointer;
   color: var(--ink);
   padding: 4px 8px;
-  opacity: 0.6;
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity 0.15s;
 }
-.project-panel-close:hover { opacity: 1; }
+.project-panel-close:hover { opacity: 0.6; }
 
 .project-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  direction: rtl;
   font-size: 23px;
   font-weight: 700;
   color: var(--ink);
   margin: 0 0 16px;
-  padding-left: 36px; /* clear the close button */
+  padding-left: 36px;
   line-height: 1.3;
-  text-align: right;
+}
+
+.project-title-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 .project-panel-divider {
@@ -682,8 +741,8 @@ body {
 ───────────────────────────────────────────── */
 .filter-search-row {
   direction: rtl;
-  margin-bottom: 16px;
-  padding-bottom: 14px;
+  margin-bottom: var(--section-gap);
+  padding-bottom: var(--section-gap);
   border-bottom: var(--divider);
 }
 
@@ -789,7 +848,8 @@ body {
   font-size: 17px;
   font-weight: 700;
   color: var(--ink);
-  margin: 0 0 0;
+  margin: 0;
+  padding-left: 36px;
   text-align: right;
   direction: rtl;
 }
@@ -899,7 +959,7 @@ body {
 @media screen and (max-width: 1024px) {
   :root {
     --panel-width:       32vw;
-    --panel-radius:      60px 0 0 60px;
+    --panel-radius:      36px 0 0 36px;
     --panel-pad-h:       22px;
     --title-to-section:  28px;
     --header-to-options: 5px;
