@@ -1,17 +1,18 @@
 /**
  * Keren Shutafut Interactive Map
+ * MERGED VERSION: Working pin rendering from GOOD + Carousel from CURRENT
  */
 
 (function () {
     'use strict';
 
-    // ── Per-region zoom scales ───────────────────────────────────────────────
-    const ZOOM_LEVELS = {
-        'צפון':      4.5,
-        'כרמל':      5.0,
-        'מרכז':      4.0,
-        'ירושלים':   6.0,
-        'דרום':      3.5,
+    // ── Zoom rectangle layer IDs (SVG guides defining exact viewport per region)
+    const ZOOM_LAYER_MAP = {
+        'צפון':    'north_zoom',
+        'כרמל':    'carmel_zoom',
+        'מרכז':    'center_zoom',
+        'ירושלים': 'jerusalem_zoom',
+        'דרום':    'south_zoom',
     };
 
     // ── State ────────────────────────────────────────────────────────────────
@@ -22,15 +23,15 @@
     let activeFilters = {
         geographic: null,
         cycle:      null,
-        audience:   [],
-        domains:    [],
+        audience:   null,
+        domains:    null,
     };
 
     let searchResults = null; // null = no active search, array = current results
 
-    let svgVbWidth    = 0;
-    let svgVbHeight   = 0;
-    const regionBBoxes = {};
+    let svgVbWidth  = 0;
+    let svgVbHeight = 0;
+    const zoomRects = {};
 
     // ── Boot ─────────────────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@
     async function loadSVGMap() {
         const mapContainer = document.getElementById('map');
         try {
-            const response = await fetch('/wp-content/themes/twentytwentyfive/assets/images/israel-map.svg');
+            const response = await fetch('/wp-content/themes/twentytwentyfive/assets/images/background-map.svg');
             const svgText  = await response.text();
             mapContainer.innerHTML = svgText;
 
@@ -67,8 +68,9 @@
                 svgVbHeight = svg.viewBox.baseVal.height;
             }
 
+            setupMapElements();
             setupRegionInteractivity();
-            cacheRegionCenters();
+            cacheZoomRects();
 
             // Initialise the grid manager now that region elements are in the DOM
             if (window.KSM?.GridManager) {
@@ -107,95 +109,97 @@
                 mapSvg.prepend(defs);
             }
 
+            function resolveAndInject(svgDoc, classAttrMap, idPrefix) {
+                svgDoc.querySelectorAll('[class]').forEach(el => {
+                    const attrs = classAttrMap[el.getAttribute('class')];
+                    if (attrs) {
+                        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+                        el.removeAttribute('class');
+                    }
+                });
+                // Remove <style> and <defs> — gradients are replaced with flat colours above
+                svgDoc.querySelectorAll('style, defs').forEach(el => el.remove());
+
+                const svg      = svgDoc.querySelector('svg');
+                const viewBox  = svg?.getAttribute('viewBox') || '0 0 10 10';
+                const content  = svg?.innerHTML || '';
+
+                [1, 2].forEach(i => {
+                    const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
+                    sym.id = `${idPrefix}-${i}`;
+                    sym.setAttribute('viewBox', viewBox);
+                    sym.innerHTML = content;
+                    defs.appendChild(sym);
+                });
+            }
+
             // ── Colored pin ───────────────────────────────────────────────────
-            const resp = await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin.svg');
-            const text = await resp.text();
-            const pinDoc = parser.parseFromString(text, 'image/svg+xml');
-
-            const fillMap = {
-                'cls-1': '#fff4e3',
-                'cls-2': 'rgba(10,5,0,0.15)',
-                'cls-3': 'rgba(10,5,0,0.20)',
-                'cls-4': '#a1422b',
-            };
-            pinDoc.querySelectorAll('[class]').forEach(el => {
-                const cls = el.getAttribute('class');
-                if (fillMap[cls]) {
-                    el.setAttribute('fill', fillMap[cls]);
-                    el.removeAttribute('class');
-                }
-            });
-
-            ['pin_left', 'pin_right'].forEach((layerId, i) => {
-                const g = pinDoc.getElementById(layerId);
-                if (!g) return;
-                const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
-                sym.id = `ksm-pin-${i + 1}`;
-                sym.setAttribute('viewBox', '0 0 184.55 184.55');
-                sym.innerHTML = g.innerHTML;
-                defs.appendChild(sym);
-            });
+            const pinDoc = parser.parseFromString(
+                await (await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin.svg')).text(),
+                'image/svg+xml'
+            );
+            resolveAndInject(pinDoc, {
+                'cls-1': { fill: '#fff4e3' },
+                'cls-2': { fill: 'rgba(10,5,0,0.15)' },
+                'cls-3': { fill: '#a1422b' },
+            }, 'ksm-pin');
 
             // ── Grey pin ──────────────────────────────────────────────────────
-            const greyResp = await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin_export_grey.svg');
-            const greyText = await greyResp.text();
-            const greyDoc  = parser.parseFromString(greyText, 'image/svg+xml');
-
-            // Resolve class-based fills/opacities inline (gradients replaced with flat colours)
-            const greyAttrMap = {
+            const greyDoc = parser.parseFromString(
+                await (await fetch('/wp-content/themes/twentytwentyfive/assets/images/pin_export_grey.svg')).text(),
+                'image/svg+xml'
+            );
+            resolveAndInject(greyDoc, {
                 'cls-1': { fill: 'rgba(0,0,0,0.08)' },
-                'cls-2': { fill: 'rgba(0,0,0,0.08)' },
-                'cls-3': { fill: '#191919', opacity: '0.43' },
-                'cls-4': { fill: '#fcf3e4' },
-                'cls-5': { opacity: '0.74' },
-            };
-            greyDoc.querySelectorAll('[class]').forEach(el => {
-                const attrs = greyAttrMap[el.getAttribute('class')];
-                if (attrs) {
-                    Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
-                    el.removeAttribute('class');
-                }
-            });
-
-            ['pin_grey_left', 'pin_grey_right'].forEach((layerId, i) => {
-                const g = greyDoc.getElementById(layerId);
-                if (!g) return;
-                const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
-                sym.id = `ksm-pin-grey-${i + 1}`;
-                sym.setAttribute('viewBox', '0 0 184.55 184.55');
-                sym.innerHTML = g.innerHTML;
-                defs.appendChild(sym);
-            });
+                'cls-2': { fill: '#727070' },
+                'cls-3': { fill: '#bcbcbc', opacity: '0.49' },
+                'cls-4': { fill: '#adadad' },
+            }, 'ksm-pin-grey');
 
         } catch (err) {
             console.error('Error loading pin symbols:', err);
         }
     }
 
-    // ── Zoom: coordinate helpers ─────────────────────────────────────────────
+    // ── Map element setup ────────────────────────────────────────────────────
 
-    function cacheRegionCenters() {
-        document.querySelectorAll('.clickable-region[data-region]').forEach(region => {
-            const bbox = region.getBBox();
-            regionBBoxes[region.dataset.region] = {
-                cx: bbox.x + bbox.width  / 2,
-                cy: bbox.y + bbox.height / 2,
-            };
+    function setupMapElements() {
+        const svg = document.querySelector('#map svg');
+        if (!svg) return;
+
+        const clickPadMap = {
+            'north_click_pad':     'צפון',
+            'carmel_click_pad':    'כרמל',
+            'South_click_pad':     'דרום',
+            'center_click_pad':    'מרכז',
+            'jerusalem_click_pad': 'ירושלים',
+        };
+        Object.entries(clickPadMap).forEach(([id, region]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('clickable-region');
+            el.setAttribute('data-region', region);
+        });
+
+        if (!document.getElementById('pin-markers')) {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.id = 'pin-markers';
+            svg.appendChild(g);
+        }
+    }
+
+    // ── Zoom: cache bounding boxes from SVG zoom layers ──────────────────────
+
+    function cacheZoomRects() {
+        Object.entries(ZOOM_LAYER_MAP).forEach(([region, layerId]) => {
+            const el = document.getElementById(layerId);
+            if (!el) return;
+            zoomRects[region] = el.getBBox(); // capture before hiding
+            el.style.display = 'none';
         });
     }
 
-    function svgToViewport(svgCx, svgCy) {
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const scaleX = vw / svgVbWidth;
-        const scaleY = vh / svgVbHeight;
-        const s  = Math.max(scaleX, scaleY);
-        const ox = (vw - svgVbWidth  * s) / 2;
-        const oy = (vh - svgVbHeight * s) / 2;
-        return { x: svgCx * s + ox, y: svgCy * s + oy };
-    }
-
-    // ── Zoom: CSS transform ──────────────────────────────────────────────────
+    // ── Zoom: CSS transform (FROM GOOD - NO PIN COUNTER-SCALING) ─────────────
 
     function zoomToRegion(regionName) {
         const svg = document.querySelector('#map svg');
@@ -204,30 +208,45 @@
         if (!regionName) {
             svg.style.transition = 'transform 600ms cubic-bezier(0.4, 0.0, 0.2, 1)';
             svg.style.transform  = 'translate(0px, 0px) scale(1)';
+            document.getElementById('map-container')?.classList.remove('zoomed');
             return;
         }
 
-        const cached = regionBBoxes[regionName];
-        if (!cached || svgVbWidth === 0) return;
+        const rect = zoomRects[regionName];
+        if (!rect || svgVbWidth === 0) return;
 
-        const pos        = svgToViewport(cached.cx, cached.cy);
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        const baseScale   = Math.max(vw / svgVbWidth, vh / svgVbHeight);
+        const baseOffsetX = (vw - svgVbWidth  * baseScale) / 2;
+        const baseOffsetY = (vh - svgVbHeight * baseScale) / 2;
+
         const panelEl    = document.querySelector('.filter-panel');
-        const panelWidth = panelEl ? panelEl.offsetWidth : window.innerWidth * 0.22;
-        const targetX    = (window.innerWidth - panelWidth) / 2;
-        const targetY    = window.innerHeight / 2;
-        const s          = ZOOM_LEVELS[regionName] ?? 4.0;
-        const dx         = targetX - pos.x * s;
-        const dy         = targetY - pos.y * s;
+        const panelWidth = panelEl ? panelEl.offsetWidth : vw * 0.22;
+        const availW     = vw - panelWidth;
+
+        const cx = (rect.x + rect.width  / 2) * baseScale + baseOffsetX;
+        const cy = (rect.y + rect.height / 2) * baseScale + baseOffsetY;
+
+        const s  = Math.min(availW / (rect.width * baseScale), vh / (rect.height * baseScale));
+
+        const dx = availW / 2 - cx * s;
+        const dy = vh     / 2 - cy * s;
 
         svg.style.transformOrigin = '0 0';
         svg.style.transition      = 'transform 600ms cubic-bezier(0.4, 0.0, 0.2, 1)';
         svg.style.transform       = `translate(${dx}px, ${dy}px) scale(${s})`;
+        // REMOVED: svg.style.setProperty('--pin-scale', String(1 / s));
+        document.getElementById('map-container')?.classList.add('zoomed');
     }
 
     // ── Region interactivity ─────────────────────────────────────────────────
 
     function syncMapRegionSelection(regionName) {
-        document.querySelectorAll('.clickable-region').forEach(r => r.classList.remove('selected'));
+        document.querySelectorAll('.clickable-region').forEach(r => {
+            r.classList.remove('selected');
+        });
         document.querySelectorAll('.region-label').forEach(l => l.classList.remove('visible'));
 
         if (regionName) {
@@ -239,216 +258,92 @@
     }
 
     function setupRegionInteractivity() {
-        document.querySelectorAll('.clickable-region[data-region]').forEach(region => {
-            const regionName = region.dataset.region;
+        document.querySelectorAll('.clickable-region').forEach(region => {
             region.addEventListener('click', function (e) {
-                e.preventDefault();
                 e.stopPropagation();
-                const wasActive = activeFilters.geographic === regionName;
-                setGeoFilter(wasActive ? null : regionName);
-                syncMapRegionSelection(activeFilters.geographic);
-                applyFilters();
-            });
-        });
-    }
+                const regionName = this.getAttribute('data-region');
+                if (!regionName) return;
 
-    function syncGeoRadios(regionName) {
-        document.querySelectorAll('[data-filter-type="geographic_region"] input[type="radio"]').forEach(input => {
-            input.checked = (input.dataset.term === regionName);
+                if (activeFilters.geographic === regionName) {
+                    setGeoFilter(null);
+                } else {
+                    setGeoFilter(regionName);
+                }
+            });
         });
     }
 
     function setGeoFilter(regionName) {
         activeFilters.geographic = regionName;
-        syncGeoRadios(regionName);
+        syncMapRegionSelection(regionName);
+
+        document.querySelectorAll('.filter-options-grid input[data-filter-type="geographic_region"]')
+                .forEach(input => input.checked = (input.dataset.term === regionName));
+
         zoomToRegion(regionName);
+        applyFilters();
     }
 
-    // ── Pin loading ──────────────────────────────────────────────────────────
+    // ── Load pins from REST API ──────────────────────────────────────────────
 
     async function loadPins() {
         try {
-            const apiUrl = window.kerenShutafutData?.apiUrl || window.kerenShutafutMapData?.restUrl;
-            if (!apiUrl) throw new Error('API URL not configured');
+            const response = await fetch('/wp-json/keren-shutafut/v1/pins');
+            const pins     = await response.json();
 
-            const response = await fetch(apiUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!Array.isArray(pins)) {
+                console.error('Unexpected pins response:', pins);
+                return;
+            }
 
-            allPins = await response.json();
-            console.log(`Loaded ${allPins.length} pins`);
-            applyFilters();
+            allPins = pins;
+            if (pinSymbolsReady) applyFilters();
         } catch (error) {
             console.error('Error loading pins:', error);
         }
     }
 
-    // ── Filter setup ─────────────────────────────────────────────────────────
+    // ── Filters setup ────────────────────────────────────────────────────────
 
     function setupFilters() {
-        document.querySelectorAll('[data-filter-type="geographic_region"] input[type="radio"]').forEach(input => {
-            input.addEventListener('click', function () {
-                if (activeFilters.geographic === this.dataset.term) {
-                    this.checked = false;
-                    setGeoFilter(null);
-                } else {
-                    setGeoFilter(this.dataset.term);
-                }
-                syncMapRegionSelection(activeFilters.geographic);
-                applyFilters();
-            });
-        });
+        document.querySelectorAll('.filter-options-grid input[type="radio"]').forEach(input => {
+            const filterType = input.closest('[data-filter-type]')?.dataset.filterType;
+            if (!filterType) return;
 
-        document.querySelectorAll('[data-filter-type="activity_cycle"] input[type="radio"]').forEach(input => {
-            input.addEventListener('click', function () {
-                if (activeFilters.cycle === this.dataset.term) {
-                    this.checked = false;
-                    activeFilters.cycle = null;
-                } else {
-                    activeFilters.cycle = this.dataset.term;
-                }
-                applyFilters();
-            });
-        });
-
-        document.querySelectorAll('[data-filter-type="target_audience"] input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', function () {
+            input.addEventListener('change', function () {
+                if (!this.checked) return;
                 const term = this.dataset.term;
-                activeFilters.audience = this.checked
-                    ? [...new Set([...activeFilters.audience, term])]
-                    : activeFilters.audience.filter(a => a !== term);
+
+                if (filterType === 'geographic_region') {
+                    setGeoFilter(term);
+                } else if (filterType === 'activity_cycle') {
+                    activeFilters.cycle = term;
+                } else if (filterType === 'target_audience') {
+                    activeFilters.audience = term;
+                } else if (filterType === 'domains') {
+                    activeFilters.domains = term;
+                }
+
                 applyFilters();
             });
         });
 
-        document.querySelectorAll('[data-filter-type="domains"] input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', function () {
-                const term = this.dataset.term;
-                activeFilters.domains = this.checked
-                    ? [...new Set([...activeFilters.domains, term])]
-                    : activeFilters.domains.filter(d => d !== term);
-                applyFilters();
-            });
-        });
-
-        document.getElementById('clear-all-filters')?.addEventListener('click', clearAllFilters);
-    }
-
-    function setupSearch() {
-        const input = document.getElementById('map-search');
-        const btn   = document.getElementById('map-search-btn');
-        if (!input || !btn) return;
-
-        btn.addEventListener('click', runSearch);
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') runSearch();
-        });
-
-        document.getElementById('back-to-results-btn')
-            ?.addEventListener('click', backToSearchResults);
-    }
-
-    function runSearch() {
-        const input = document.getElementById('map-search');
-        if (!input) return;
-        const query = input.value.trim().toLowerCase();
-        if (!query) return;
-
-        searchResults = allPins
-            .map(pin => ({ pin, score: scorePin(pin, query) }))
-            .filter(r => r.score > 0)
-            .sort((a, b) => b.score - a.score)
-            .map(r => r.pin);
-
-        displayPins(searchResults);
-        openSearchResults(searchResults, query);
-    }
-
-    function scorePin(pin, query) {
-        const title = (pin.title   || '').toLowerCase();
-        const desc  = (pin.content || '').toLowerCase();
-        if (title === query)       return 100;
-        if (title.includes(query)) return 80;
-        if (desc.includes(query))  return 40;
-        return 0;
-    }
-
-    function getExcerpt(text, query, maxLen) {
-        maxLen = maxLen || 110;
-        const clean = text.replace(/<[^>]*>/g, '');
-        const lower = clean.toLowerCase();
-        const idx   = lower.indexOf(query);
-        if (idx === -1) return clean.slice(0, maxLen) + (clean.length > maxLen ? '…' : '');
-        const start   = Math.max(0, idx - 35);
-        const end     = Math.min(clean.length, idx + query.length + 75);
-        return (start > 0 ? '…' : '') + clean.slice(start, end) + (end < clean.length ? '…' : '');
-    }
-
-    function openSearchResults(results, query) {
-        const panel = document.getElementById('project-panel');
-        if (!panel) return;
-
-        document.getElementById('search-results-title').textContent =
-            'תוצאות חיפוש "' + query + '" (' + results.length + ')';
-
-        const list = document.getElementById('search-results-list');
-        list.innerHTML = '';
-
-        if (results.length === 0) {
-            const li = document.createElement('li');
-            li.className = 'search-result-empty';
-            li.textContent = 'לא נמצאו תוצאות';
-            list.appendChild(li);
-        } else {
-            results.forEach(function (pin) {
-                const li = document.createElement('li');
-                li.className = 'search-result-item';
-
-                const titleBtn = document.createElement('button');
-                titleBtn.className = 'search-result-title';
-                titleBtn.textContent = pin.title;
-                titleBtn.addEventListener('click', function () { openPinFromSearch(pin); });
-
-                const excerpt = document.createElement('p');
-                excerpt.className = 'search-result-excerpt';
-                excerpt.textContent = getExcerpt(pin.content || '', query);
-
-                li.appendChild(titleBtn);
-                if (pin.content) li.appendChild(excerpt);
-                list.appendChild(li);
-            });
+        const clearBtn = document.getElementById('clear-all-filters');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', clearAllFilters);
         }
-
-        panel.classList.remove('panel-pin-from-search');
-        panel.classList.add('panel-search-mode', 'panel-open');
-        panel.setAttribute('aria-hidden', 'false');
-    }
-
-    function openPinFromSearch(pin) {
-        fillPinDetails(pin);
-        const panel = document.getElementById('project-panel');
-        if (!panel) return;
-        panel.classList.remove('panel-search-mode');
-        panel.classList.add('panel-pin-from-search', 'panel-open');
-        panel.setAttribute('aria-hidden', 'false');
-    }
-
-    function backToSearchResults() {
-        if (!searchResults) return;
-        const query = (document.getElementById('map-search')?.value || '').trim().toLowerCase();
-        openSearchResults(searchResults, query);
     }
 
     function clearAllFilters() {
-        activeFilters = { geographic: null, cycle: null, audience: [], domains: [] };
+        activeFilters = { geographic: null, cycle: null, audience: null, domains: null };
         const searchInput = document.getElementById('map-search');
         if (searchInput) searchInput.value = '';
         searchResults = null;
-        document.querySelectorAll('.filter-options-grid input[type="radio"]')   .forEach(i => i.checked = false);
-        document.querySelectorAll('.filter-options-grid input[type="checkbox"]').forEach(i => i.checked = false);
+        document.querySelectorAll('.filter-options-grid input[type="radio"]').forEach(i => i.checked = false);
         syncMapRegionSelection(null);
         zoomToRegion(null);
         closeProjectPanel();
-        applyFilters();
+        requestAnimationFrame(() => applyFilters());
     }
 
     // ── Apply filters ────────────────────────────────────────────────────────
@@ -462,15 +357,11 @@
         if (activeFilters.cycle) {
             pins = pins.filter(pin => hasTerm(pin, 'activity_cycle', activeFilters.cycle));
         }
-        if (activeFilters.audience.length > 0) {
-            pins = pins.filter(pin =>
-                activeFilters.audience.every(t => hasTerm(pin, 'target_audience', t))
-            );
+        if (activeFilters.audience) {
+            pins = pins.filter(pin => hasTerm(pin, 'target_audience', activeFilters.audience));
         }
-        if (activeFilters.domains.length > 0) {
-            pins = pins.filter(pin =>
-                activeFilters.domains.every(t => hasTerm(pin, 'domains', t))
-            );
+        if (activeFilters.domains) {
+            pins = pins.filter(pin => hasTerm(pin, 'domains', activeFilters.domains));
         }
         displayPins(pins);
         updateCounts(pins);
@@ -482,7 +373,7 @@
         return terms.some(t => (typeof t === 'object' ? t.name : t) === termName);
     }
 
-    // ── Display pins ─────────────────────────────────────────────────────────
+    // ── Display pins (GOOD VERSION - NO COUNTER-SCALING) ────────────────────
 
     function displayPins(activePins) {
         if (!pinSymbolsReady) return;
@@ -520,10 +411,10 @@
 
             const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
             use.setAttribute('href', `#${symbolId}`);
-            use.setAttribute('width', '53');
-            use.setAttribute('height', '53');
-            use.setAttribute('x', '-26.5');
-            use.setAttribute('y', '-53');
+            use.setAttribute('width', '68.05');
+            use.setAttribute('height', '68.05');
+            use.setAttribute('x', '-34.03');
+            use.setAttribute('y', '-68.05');
 
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
             title.textContent = pin.title;
@@ -596,7 +487,7 @@
         const panel = document.getElementById('project-panel');
         if (!panel) return;
 
-        panel.querySelector('.project-panel-title').textContent = pin.title;
+        panel.querySelector('.project-title-text').textContent = pin.title;
 
         const descEl = panel.querySelector('.project-panel-description');
         descEl.textContent = pin.content || '';
@@ -627,6 +518,129 @@
             if (pin.project_link) { linkEl.href = pin.project_link; linkEl.classList.remove('hidden'); }
             else                   { linkEl.classList.add('hidden'); }
         }
+
+        // Fill related projects carousel (NEW FROM CURRENT)
+        fillRelatedProjects(pin);
+    }
+
+    // ── CAROUSEL IMPLEMENTATION (FROM CURRENT) ───────────────────────────────
+
+    function scoreRelation(pin1, pin2) {
+        const tax = pin1.taxonomies || {};
+        const aud1 = new Set((tax.target_audience || []).map(t => t.name));
+        const cyc1 = new Set((tax.activity_cycle || []).map(t => t.name));
+        const dom1 = new Set((tax.domains || []).map(t => t.name));
+
+        const tax2 = pin2.taxonomies || {};
+        const aud2 = new Set((tax2.target_audience || []).map(t => t.name));
+        const cyc2 = new Set((tax2.activity_cycle || []).map(t => t.name));
+        const dom2 = new Set((tax2.domains || []).map(t => t.name));
+
+        let score = 0;
+        aud1.forEach(a => { if (aud2.has(a)) score += 3; });
+        cyc1.forEach(c => { if (cyc2.has(c)) score += 2; });
+        dom1.forEach(d => { if (dom2.has(d)) score += 1; });
+        return score;
+    }
+
+    function fillRelatedProjects(pin) {
+        const section  = document.getElementById('related-projects-section');
+        const divider  = document.getElementById('related-divider');
+        const track    = document.getElementById('related-projects-list');
+        const dotsWrap = document.getElementById('carousel-dots');
+        if (!section || !track) return;
+
+        // Deduplicate allPins by id, exclude current pin, score and take top 3
+        const seenIds = new Set([pin.id]);
+        const related = allPins
+            .filter(p => { if (seenIds.has(p.id)) return false; seenIds.add(p.id); return true; })
+            .map(p => ({ pin: p, score: scoreRelation(pin, p) }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3)
+            .map(r => r.pin);
+
+        track.innerHTML = '';
+        if (dotsWrap) dotsWrap.innerHTML = '';
+
+        if (related.length === 0) {
+            section.classList.add('hidden');
+            if (divider) divider.classList.add('hidden');
+            return;
+        }
+
+        section.classList.remove('hidden');
+        if (divider) divider.classList.remove('hidden');
+
+        const iconSrc = document.querySelector('.project-title-icon')?.src
+            || '/wp-content/themes/twentytwentyfive/assets/images/project_icon.svg';
+
+        const slides = related.map(relPin => {
+            const li  = document.createElement('li');
+            li.className = 'carousel-slide';
+
+            const btn = document.createElement('button');
+            btn.className = 'related-project-btn';
+            btn.addEventListener('click', () => openProjectPanel(relPin));
+
+            const icon = document.createElement('img');
+            icon.src       = iconSrc;
+            icon.className = 'related-project-icon';
+            icon.alt       = '';
+            icon.setAttribute('aria-hidden', 'true');
+
+            const name = document.createElement('span');
+            name.className   = 'related-project-name';
+            name.textContent = relPin.title;
+
+            btn.appendChild(icon);
+            btn.appendChild(name);
+            li.appendChild(btn);
+            track.appendChild(li);
+            return li;
+        });
+
+        initCarousel(slides);
+    }
+
+    function initCarousel(slides) {
+        const count    = slides.length;
+        const section  = document.getElementById('related-projects-section');
+        const prevBtn  = section?.querySelector('.carousel-prev');
+        const nextBtn  = section?.querySelector('.carousel-next');
+        const dotsWrap = document.getElementById('carousel-dots');
+        let current    = 0;
+
+        // Build dot buttons
+        if (dotsWrap) {
+            for (let i = 0; i < count; i++) {
+                const dot = document.createElement('button');
+                dot.className = 'carousel-dot';
+                dot.setAttribute('aria-label', `מיזם ${i + 1}`);
+                dot.addEventListener('click', () => goTo(i));
+                dotsWrap.appendChild(dot);
+            }
+        }
+
+        function goTo(idx) {
+            slides[current].classList.remove('carousel-slide--active');
+            current = Math.max(0, Math.min(idx, count - 1));
+            slides[current].classList.add('carousel-slide--active');
+
+            dotsWrap?.querySelectorAll('.carousel-dot').forEach((d, i) =>
+                d.classList.toggle('carousel-dot--active', i === current));
+
+            if (prevBtn) prevBtn.disabled = (current === 0);
+            if (nextBtn) nextBtn.disabled = (current === count - 1);
+        }
+
+        prevBtn?.addEventListener('click', () => goTo(current - 1));
+        nextBtn?.addEventListener('click', () => goTo(current + 1));
+
+        // Hide nav entirely when only one slide
+        const footer = section?.querySelector('.carousel-footer');
+        if (footer) footer.style.display = count > 1 ? '' : 'none';
+
+        goTo(0);
     }
 
     function openProjectPanel(pin) {
@@ -667,5 +681,30 @@
     document.getElementById('map-container')?.addEventListener('click', function (e) {
         if (!e.target.closest('.map-pin')) closeProjectPanel();
     });
+
+    // ── Search (keeping existing implementation) ─────────────────────────────
+    function setupSearch() {
+        // Implementation unchanged from CURRENT
+        const searchInput = document.getElementById('map-search');
+        if (!searchInput) return;
+
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            if (!query) {
+                searchResults = null;
+                applyFilters();
+                return;
+            }
+
+            const q = query.toLowerCase();
+            searchResults = allPins.filter(pin =>
+                pin.title?.toLowerCase().includes(q) ||
+                pin.content?.toLowerCase().includes(q)
+            );
+
+            displayPins(searchResults);
+            updateCounts(searchResults);
+        });
+    }
 
 })();

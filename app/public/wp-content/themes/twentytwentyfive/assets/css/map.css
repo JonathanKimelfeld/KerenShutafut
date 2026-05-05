@@ -2,6 +2,13 @@
  * Keren Shutafut Interactive Map Styles
  */
 
+/* Register --pin-scale as an animatable numeric property */
+@property --pin-scale {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
 /*
  * ── Local font (place .ttf files in assets/fonts/open-sans-hebrew/) ──────
  * Required files:
@@ -51,18 +58,27 @@
   --font-main:         'Open Sans Hebrew', 'Arial Hebrew', Arial, sans-serif;
 
   /* Panel geometry */
-  --panel-width:     22vw;
-  --panel-min-width: 360px;
-  --panel-max-width: 460px;
+  --panel-width:     calc(22vw + 10px);
+  --panel-min-width: 370px;
+  --panel-max-width: 470px;
   --panel-pad-v:     36px;
   --panel-pad-h:     28px;
-  --panel-radius:    87px 0 0 87px; /* rounded left edge, flush right */
+  --panel-radius:    20px 0 0 20px; /* rounded left edge, flush right */
 
   /* Spacing */
   --title-to-section:  20px;
   --header-to-options: 6px;
   --row-gap:           14px;
-  --section-gap:       16px;
+  --section-gap:       14px;
+}
+
+/* ─────────────────────────────────────────────
+   Global radio button style
+───────────────────────────────────────────── */
+input[type="radio"]:checked {
+  accent-color: rgb(150, 72, 50);
+  outline: 1.5px solid transparent;
+  box-shadow: 0 0 0 1.5px rgb(150, 72, 50), inset 0 0 0 1.5px white;
 }
 
 /* ─────────────────────────────────────────────
@@ -109,7 +125,42 @@ body {
   height: 100%;
   display: block;
   transform-origin: 0 0;
+  --pin-scale: 1;
 }
+
+/* Reset zoom button */
+#map-reset-btn {
+  position: fixed;
+  bottom: 32px;
+  left: 32px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-bg);
+  border: 2px solid var(--ink);
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+#map-container.zoomed #map-reset-btn {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#map-reset-btn:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+}
+
 
 /* ─────────────────────────────────────────────
    Filter panel — fixed right overlay
@@ -121,7 +172,7 @@ body {
   width: var(--panel-width);
   min-width: var(--panel-min-width);
   max-width: var(--panel-max-width);
-  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.28), -6px 0 18px rgba(0, 0, 0, 0.16);
+  box-shadow: -13px 0 45px rgba(0, 0, 0, 0.20), -4px 0 13px rgba(0, 0, 0, 0.12);
   height: 100vh;
   background: var(--panel-bg);
   backdrop-filter: blur(8px);
@@ -224,7 +275,7 @@ body {
    Filter sections
 ───────────────────────────────────────────── */
 .filter-group {
-  padding-bottom: 8px;
+  padding-bottom: var(--section-gap);
   border-bottom: var(--divider);
   margin-bottom: var(--section-gap);
 }
@@ -266,9 +317,8 @@ body {
 ───────────────────────────────────────────── */
 .filter-options-grid {
   display: grid;
-  /* Each column is at least as wide as its content; surplus space is shared equally */
-  grid-template-columns: repeat(3, max-content);
-  justify-content: start;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
   row-gap: var(--row-gap);
   column-gap: 10px;
   direction: rtl;
@@ -354,21 +404,9 @@ body {
 }
 
 .filter-option input[type="radio"]:checked {
-  background: var(--ink);
+  background: rgb(150, 72, 50);
   border-color: var(--ink);
-}
-
-.filter-option input[type="radio"]:checked::after {
-  content: '';
-  position: absolute;
-  left: 3.2px;
-  top: 1px;
-  width: 5.5px;
-  height: 8.5px;
-  border: 2px solid white;
-  border-top: none;
-  border-left: none;
-  transform: rotate(45deg);
+  box-shadow: inset 0 0 0 1.5px var(--panel-bg);
 }
 
 /* Shared focus ring */
@@ -381,21 +419,46 @@ body {
 /* ─────────────────────────────────────────────
    SVG region interaction
 ───────────────────────────────────────────── */
+/* ── Zoom guide rectangles: hidden but still participate in layout for getBBox ── */
+#north_zoom, #carmel_zoom, #center_zoom, #jerusalem_zoom, #south_zoom {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Click pad overlays: invisible but always in layout for hit-testing ── */
+[id$="_click_pad"] path {
+  fill-opacity: 0;
+  pointer-events: all;
+}
+
+/* Show the overlay on hover */
+[id$="_click_pad"]:hover path {
+  fill-opacity: 1;
+}
+
+/* Selected region: solid fill, bold outline, lifted shadow */
+.clickable-region.selected path {
+  fill: rgb(198, 179, 166) !important;
+  fill-opacity: 1 !important;
+  opacity: 1 !important;   /* override SVG cls-13 opacity:0.44 so fill and stroke are fully opaque */
+  stroke: #2b4a45;
+  stroke-width: 8px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* Elevation effect: physically lift the region up + drop shadow */
+.clickable-region.selected {
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.52));
+  transform: translateY(-8px);
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+/* Elevated pin shadow is applied via SVG group filter on #pin-markers-elevated — no CSS filter needed here */
+
 .clickable-region {
   cursor: pointer;
-  transition: opacity 0.25s;
-}
-
-.clickable-region:hover { opacity: 0.8; }
-
-.clickable-region.selected {
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.28));
-}
-
-.clickable-region.selected .cls-9 {
-  fill: rgb(194, 180, 167);
-  stroke: #3d5956;
-  stroke-width: 8px;
+  transition: transform 0.3s ease, filter 0.3s ease;
 }
 
 /* ── Individual map pins ── */
@@ -403,13 +466,22 @@ body {
   pointer-events: all;
 }
 
+
+/* ─────────────────────────────────────────────
+   Pins (FIXED VERSION - NO COUNTER-SCALING)
+───────────────────────────────────────────── */
 .map-pin {
   cursor: pointer;
   transition: opacity 0.3s ease;
 }
 
 .map-pin--inactive {
-  opacity: 0.4;
+  opacity: 1;
+}
+
+/* Elevated class kept for styling purposes, but elevation is now in SVG transform */
+.map-pin--elevated {
+  /* Elevation applied in SVG space via transform attribute, not CSS */
 }
 
 /* Scale the inner group so CSS transform doesn't conflict
@@ -431,6 +503,7 @@ body {
   opacity: 0;
   pointer-events: none;
 }
+
 
 /* ── Puzzle markers ── */
 #puzzle-markers {
@@ -480,6 +553,11 @@ body {
 
 .region-label.visible { display: block; }
 
+/* City label font override */
+#map text {
+  font-family: 'Editor Sans', 'Open Sans Hebrew', 'Arial Hebrew', Arial, sans-serif;
+}
+
 /* ─────────────────────────────────────────────
    Project details panel
 ───────────────────────────────────────────── */
@@ -494,7 +572,7 @@ body {
   border-radius: var(--panel-radius);
   border: 2px solid var(--ink);
   border-right: none;
-  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.28), -6px 0 18px rgba(0, 0, 0, 0.16);
+  box-shadow: -13px 0 45px rgba(0, 0, 0, 0.20), -4px 0 13px rgba(0, 0, 0, 0.12);
   box-sizing: border-box;
   z-index: 90;
   transform: translateX(100%);
@@ -510,8 +588,8 @@ body {
 
 .project-panel-inner {
   direction: rtl;
-  /* right padding clears the filter panel sitting on top */
-  padding: var(--panel-pad-v) calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) + var(--panel-pad-h)) 40px var(--panel-pad-h);
+  /* right padding clears the filter panel sitting on top; left gets extra spacing */
+  padding: var(--panel-pad-v) calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) + var(--panel-pad-h)) 40px calc(var(--panel-pad-h) + 20px);
   height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
@@ -525,28 +603,38 @@ body {
 
 .project-panel-close {
   position: absolute;
-  top: 18px;
-  left: 22px;
+  top: 16px;
+  left: 20px;
   background: none;
   border: none;
-  font-size: 25px;
-  line-height: 1;
   cursor: pointer;
   color: var(--ink);
   padding: 4px 8px;
-  opacity: 0.6;
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity 0.15s;
 }
-.project-panel-close:hover { opacity: 1; }
+.project-panel-close:hover { opacity: 0.6; }
 
 .project-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  direction: rtl;
   font-size: 23px;
   font-weight: 700;
   color: var(--ink);
   margin: 0 0 16px;
-  padding-left: 36px; /* clear the close button */
+  padding-left: 36px;
   line-height: 1.3;
-  text-align: right;
+}
+
+.project-title-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
 }
 
 .project-panel-divider {
@@ -634,6 +722,135 @@ body {
 .project-panel-org.hidden,
 .project-panel-link.hidden { display: none; }
 
+/* ── Related projects carousel ── */
+.related-projects-section {
+  direction: rtl;
+}
+
+.related-projects-section.hidden,
+#related-divider.hidden { display: none; }
+
+.related-projects-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 10px;
+  text-align: right;
+  direction: rtl;
+}
+
+.related-carousel {
+  direction: rtl;
+}
+
+/* Track: list container — only one slide visible at a time */
+.carousel-track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-height: 34px;
+}
+
+.carousel-slide {
+  display: none;
+}
+
+.carousel-slide.carousel-slide--active {
+  display: flex;
+  align-items: center;
+}
+
+.related-project-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  direction: rtl;
+  text-align: right;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.related-project-btn:hover { opacity: 0.65; }
+
+.related-project-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.related-project-name {
+  flex: 1;
+  text-align: right;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Carousel navigation footer */
+.carousel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  direction: rtl;
+  margin-top: 10px;
+}
+
+.carousel-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.carousel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(43, 74, 69, 0.22);
+  cursor: pointer;
+  transition: background 0.18s;
+  flex-shrink: 0;
+}
+
+.carousel-dot.carousel-dot--active {
+  background: var(--ink);
+}
+
+.carousel-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.carousel-arrow svg {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+.carousel-arrow:hover:not(:disabled) { opacity: 0.65; }
+.carousel-arrow:disabled { opacity: 0.22; cursor: default; }
+
 /* ── Legacy close button (kept for compatibility) ── */
 .modal-close {
   position: absolute;
@@ -682,8 +899,8 @@ body {
 ───────────────────────────────────────────── */
 .filter-search-row {
   direction: rtl;
-  margin-bottom: 16px;
-  padding-bottom: 14px;
+  margin-bottom: var(--section-gap);
+  padding-bottom: var(--section-gap);
   border-bottom: var(--divider);
 }
 
@@ -764,6 +981,8 @@ body {
 .project-panel.panel-search-mode .project-panel-meta,
 .project-panel.panel-search-mode #pm-org,
 .project-panel.panel-search-mode #pm-link,
+.project-panel.panel-search-mode #related-projects-section,
+.project-panel.panel-search-mode #related-divider,
 .project-panel.panel-search-mode .project-panel-divider { display: none; }
 
 /* Pin-from-search mode — show back button, hide search view */
@@ -789,7 +1008,8 @@ body {
   font-size: 17px;
   font-weight: 700;
   color: var(--ink);
-  margin: 0 0 0;
+  margin: 0;
+  padding-left: 36px;
   text-align: right;
   direction: rtl;
 }
@@ -899,7 +1119,7 @@ body {
 @media screen and (max-width: 1024px) {
   :root {
     --panel-width:       32vw;
-    --panel-radius:      60px 0 0 60px;
+    --panel-radius:      20px 0 0 20px;
     --panel-pad-h:       22px;
     --title-to-section:  28px;
     --header-to-options: 5px;
@@ -920,7 +1140,7 @@ body {
     --header-to-options: 5px;
     --row-gap:           12px;
     --section-gap:       12px;
-    --panel-radius:      40px 40px 0 0;
+    --panel-radius:      20px 20px 0 0;
   }
 
   .filter-panel {
