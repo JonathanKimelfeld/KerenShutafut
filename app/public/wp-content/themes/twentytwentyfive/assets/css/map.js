@@ -229,8 +229,7 @@
         const cx = (rect.x + rect.width  / 2) * baseScale + baseOffsetX;
         const cy = (rect.y + rect.height / 2) * baseScale + baseOffsetY;
 
-        const ZOOM_PAD = 60; // extra padding keeps pins near the region edge fully visible
-        const s  = Math.min((availW - 2 * ZOOM_PAD) / (rect.width * baseScale), (vh - 2 * ZOOM_PAD) / (rect.height * baseScale));
+        const s  = Math.min(availW / (rect.width * baseScale), vh / (rect.height * baseScale));
 
         const dx = availW / 2 - cx * s;
         const dy = vh     / 2 - cy * s;
@@ -412,17 +411,17 @@
 
             const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
             use.setAttribute('href', `#${symbolId}`);
-            use.setAttribute('width', '74.86');
-            use.setAttribute('height', '74.86');
-            use.setAttribute('x', '-37.43');
-            use.setAttribute('y', '-74.86');
+            use.setAttribute('width', '68.05');
+            use.setAttribute('height', '68.05');
+            use.setAttribute('x', '-34.03');
+            use.setAttribute('y', '-68.05');
+
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = pin.title;
 
             inner.appendChild(use);
             g.appendChild(inner);
-            g.setAttribute('data-pin-title', pin.title);
-            g.addEventListener('mouseover', e => pinTooltipShow(e, pin.title));
-            g.addEventListener('mousemove', e => pinTooltipMove(e));
-            g.addEventListener('mouseout', () => pinTooltipHide());
+            g.appendChild(title);
             g.addEventListener('click', e => {
                 e.stopPropagation();
                 openProjectPanel(pin);
@@ -430,34 +429,6 @@
 
             markersGroup.appendChild(g);
         });
-    }
-
-    // ── Pin tooltips ─────────────────────────────────────────────────────────
-
-    const _pinTooltip = (() => {
-        let el = document.getElementById('map-tooltip');
-        if (!el) {
-            el = document.createElement('div');
-            el.id = 'map-tooltip';
-            document.body.appendChild(el);
-        }
-        return el;
-    })();
-
-    function pinTooltipShow(e, text) {
-        _pinTooltip.textContent = text;
-        _pinTooltip.style.left = e.clientX + 'px';
-        _pinTooltip.style.top  = e.clientY + 'px';
-        _pinTooltip.classList.add('visible');
-    }
-
-    function pinTooltipMove(e) {
-        _pinTooltip.style.left = e.clientX + 'px';
-        _pinTooltip.style.top  = e.clientY + 'px';
-    }
-
-    function pinTooltipHide() {
-        _pinTooltip.classList.remove('visible');
     }
 
     /**

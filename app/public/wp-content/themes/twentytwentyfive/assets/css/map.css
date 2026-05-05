@@ -126,6 +126,7 @@ body {
   display: block;
   transform-origin: 0 0;
   --pin-scale: 1;
+  overflow: visible; /* pins near SVG edge are not clipped by viewBox; #map-container clips the viewport */
 }
 
 /* Reset zoom button */
@@ -203,7 +204,7 @@ body {
 .filter-panel-inner {
   /* Restore RTL for all content; direction: ltr on the parent only controls scrollbar side */
   direction: rtl;
-  padding: var(--panel-pad-v) var(--panel-pad-h) 40px;
+  padding: var(--panel-pad-v) var(--panel-pad-h) 40px calc(var(--panel-pad-h) + 14px);
 }
 
 /* ── Panel title + clear button ── */
@@ -260,7 +261,7 @@ body {
 }
 
 .panel-description {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--ink);
   line-height: 1.7;
@@ -291,6 +292,8 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
+  padding-top: 8px;
+  padding-bottom: 8px;
   margin-bottom: var(--header-to-options);
   direction: rtl;
 }
@@ -504,6 +507,27 @@ body {
   pointer-events: none;
 }
 
+/* ── Custom pin tooltip ── */
+#map-tooltip {
+  position: fixed;
+  background: var(--ink);
+  color: var(--panel-bg);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--font-main);
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.08s;
+  transform: translate(-50%, calc(-100% - 10px));
+}
+
+#map-tooltip.visible {
+  opacity: 1;
+}
 
 /* ── Puzzle markers ── */
 #puzzle-markers {
@@ -651,6 +675,21 @@ body {
   line-height: 1.75;
   margin: 0;
   text-align: right;
+}
+
+.description-with-divider {
+  position: relative;
+  padding-right: 16px;
+}
+
+.vertical-divider-right {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink);
+  opacity: 0.2;
 }
 
 .project-panel-meta {
@@ -977,6 +1016,7 @@ body {
 /* Search results mode */
 .project-panel.panel-search-mode .search-results-view { display: block; }
 .project-panel.panel-search-mode .project-panel-title,
+.project-panel.panel-search-mode .description-with-divider,
 .project-panel.panel-search-mode .project-panel-description,
 .project-panel.panel-search-mode .project-panel-meta,
 .project-panel.panel-search-mode #pm-org,

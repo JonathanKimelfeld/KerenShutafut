@@ -16,6 +16,7 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
     <!-- Full-screen map (underlies the panel) -->
     <div id="map-container" aria-hidden="true">
         <div id="map"></div>
+        <div id="map-tooltip"></div>
         <button id="map-reset-btn" aria-label="חזור למבט כולל">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M1 1h4v4M13 1h-4v4M1 13h4v-4M13 13h-4v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -216,9 +217,10 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                 <img class="project-title-icon" src="<?php echo get_template_directory_uri(); ?>/assets/images/project_icon.svg" alt="" aria-hidden="true">
                 <span class="project-title-text"></span>
             </h2>
-            <div class="project-panel-divider"></div>
-
-            <p class="project-panel-description"></p>
+            <div class="description-with-divider">
+                <div class="vertical-divider-right"></div>
+                <p class="project-panel-description"></p>
+            </div>
             <div class="project-panel-divider"></div>
 
             <ul class="project-panel-meta">
