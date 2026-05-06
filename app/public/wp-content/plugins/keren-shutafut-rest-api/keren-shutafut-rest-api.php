@@ -148,6 +148,7 @@ function keren_shutafut_get_pins() {
             'content'         => wp_strip_all_tags( $pin->post_content ),
             'project_link'    => $project_link ?: null,
             'operating_org'   => $operating_org ?: null,
+            'location'        => get_post_meta( $pin->ID, 'location', true ) ?: null,
             'featured_image'  => get_the_post_thumbnail_url( $pin->ID, 'large' ) ?: null,
             // Coordinate data: JS GridManager uses latitude/longitude directly.
             // coordinates_dms is the human-readable source field (optional).

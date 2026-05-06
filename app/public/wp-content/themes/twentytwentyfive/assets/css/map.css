@@ -129,38 +129,6 @@ body {
   overflow: visible; /* pins near SVG edge are not clipped by viewBox; #map-container clips the viewport */
 }
 
-/* Reset zoom button */
-#map-reset-btn {
-  position: fixed;
-  bottom: 32px;
-  left: 32px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--panel-bg);
-  border: 2px solid var(--ink);
-  border-radius: 24px;
-  padding: 8px 16px;
-  font-family: var(--font-main);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s, box-shadow 0.15s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-}
-
-#map-container.zoomed #map-reset-btn {
-  opacity: 1;
-  pointer-events: all;
-}
-
-#map-reset-btn:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.16);
-}
 
 
 /* ─────────────────────────────────────────────
@@ -699,34 +667,27 @@ body {
 }
 
 .project-panel-meta {
-  list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.project-meta-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.project-meta-row {
   font-size: 13px;
-  font-weight: 600;
   color: var(--ink);
   direction: rtl;
-}
-
-.project-meta-item .meta-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  color: var(--ink);
-}
-
-.project-meta-item span {
-  flex: 1;
   text-align: right;
+}
+
+.project-meta-row strong {
+  font-weight: 700;
+  margin-left: 3px;
+}
+
+.project-meta-row span {
+  font-weight: 400;
 }
 
 .project-panel-org {
@@ -763,7 +724,7 @@ body {
 .project-panel-link .meta-icon { width: 36px; height: 36px; flex-shrink: 0; }
 
 /* Hide placeholder items when empty */
-.project-meta-item.hidden,
+.project-meta-row.hidden,
 .project-panel-org.hidden,
 .project-panel-link.hidden { display: none; }
 
@@ -1214,11 +1175,36 @@ body {
 }
 
 /* ─────────────────────────────────────────────
+   Map logo (bottom-left corner)
+───────────────────────────────────────────── */
+.map-logo {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 100;
+}
+
+.map-logo img {
+  display: block;
+  max-width: 120px;
+  height: auto;
+}
+
+@media screen and (max-width: 768px) {
+  .map-logo img {
+    max-width: 80px;
+  }
+}
+
+/* ─────────────────────────────────────────────
    Project featured image
 ───────────────────────────────────────────── */
 .project-images-section {
-  display: none;
   margin-top: 20px;
+}
+
+.project-images-section.hidden {
+  display: none;
 }
 
 .project-images-section img.project-image {

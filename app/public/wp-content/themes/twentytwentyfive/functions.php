@@ -208,3 +208,13 @@ function keren_shutafut_map_document_title( $title_parts ) {
     return $title_parts;
 }
 add_filter( 'document_title_parts', 'keren_shutafut_map_document_title' );
+
+/**
+ * Hide the admin bar on the map page
+ */
+add_filter( 'show_admin_bar', function( $show ) {
+    if ( is_page_template( 'templates/template-map.php' ) ) {
+        return false;
+    }
+    return $show;
+} );

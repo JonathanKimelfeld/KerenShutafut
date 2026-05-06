@@ -40,7 +40,6 @@
         loadPins();
         setupFilters();
         setupSearch();
-        setupFullMapButton();
     });
 
     // ── Map init ─────────────────────────────────────────────────────────────
@@ -554,10 +553,10 @@
         if (imagesSection) {
             if (pin.featured_image) {
                 imagesSection.innerHTML = `<img src="${pin.featured_image}" alt="${pin.title}" class="project-image" loading="lazy">`;
-                imagesSection.style.display = 'block';
+                imagesSection.classList.remove('hidden');
             } else {
                 imagesSection.innerHTML = '';
-                imagesSection.style.display = 'none';
+                imagesSection.classList.add('hidden');
             }
         }
 
@@ -825,17 +824,5 @@
         openSearchResults(searchResults, query);
     }
 
-    // ── Full map reset button ─────────────────────────────────────────────────
-
-    function setupFullMapButton() {
-        const btn = document.getElementById('map-reset-btn');
-        if (!btn) return;
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            clearAllFilters();
-            closeProjectPanel();
-            zoomToRegion(null);
-        });
-    }
 
 })();
