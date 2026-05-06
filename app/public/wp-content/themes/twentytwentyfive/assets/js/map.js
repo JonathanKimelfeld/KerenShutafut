@@ -676,22 +676,16 @@
         const panel = document.getElementById('project-panel');
         if (!panel) return;
         fillPinDetails(pin);
-        const wasSearch = searchResults !== null;
-        searchResults = null;
         panel.classList.remove('panel-search-mode', 'panel-pin-from-search');
         panel.classList.add('panel-open');
         panel.setAttribute('aria-hidden', 'false');
-        if (wasSearch) applyFilters(); // restore all pins on map
     }
 
     function closeProjectPanel() {
         const panel = document.getElementById('project-panel');
         if (!panel) return;
-        const wasSearch = searchResults !== null;
-        searchResults = null;
         panel.classList.remove('panel-open', 'panel-search-mode', 'panel-pin-from-search');
         panel.setAttribute('aria-hidden', 'true');
-        if (wasSearch) applyFilters(); // restore all pins on map
     }
 
     // Close on X button
@@ -711,29 +705,111 @@
         if (!e.target.closest('.map-pin')) closeProjectPanel();
     });
 
-    // ── Search (keeping existing implementation) ─────────────────────────────
+    // ── Search ───────────────────────────────────────────────────────────────
+
     function setupSearch() {
-        // Implementation unchanged from CURRENT
-        const searchInput = document.getElementById('map-search');
-        if (!searchInput) return;
+        const input = document.getElementById('map-search');
+        const btn   = document.getElementById('map-search-btn');
+        if (!input || !btn) return;
 
-        searchInput.addEventListener('input', function(e) {
-            const query = e.target.value.trim();
-            if (!query) {
-                searchResults = null;
-                applyFilters();
-                return;
-            }
-
-            const q = query.toLowerCase();
-            searchResults = allPins.filter(pin =>
-                pin.title?.toLowerCase().includes(q) ||
-                pin.content?.toLowerCase().includes(q)
-            );
-
-            displayPins(searchResults);
-            updateCounts(searchResults);
+        btn.addEventListener('click', runSearch);
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') runSearch();
         });
+
+        document.getElementById('back-to-results-btn')
+            ?.addEventListener('click', backToSearchResults);
+    }
+
+    function runSearch() {
+        const input = document.getElementById('map-search');
+        if (!input) return;
+        const query = input.value.trim().toLowerCase();
+        if (!query) return;
+
+        searchResults = allPins
+            .map(pin => ({ pin, score: scorePin(pin, query) }))
+            .filter(r => r.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(r => r.pin);
+
+        displayPins(searchResults);
+        openSearchResults(searchResults, query);
+    }
+
+    function scorePin(pin, query) {
+        const title = (pin.title   || '').toLowerCase();
+        const desc  = (pin.content || '').toLowerCase();
+        if (title === query)       return 100;
+        if (title.includes(query)) return 80;
+        if (desc.includes(query))  return 40;
+        return 0;
+    }
+
+    function getExcerpt(text, query, maxLen) {
+        maxLen = maxLen || 110;
+        const clean = text.replace(/<[^>]*>/g, '');
+        const lower = clean.toLowerCase();
+        const idx   = lower.indexOf(query);
+        if (idx === -1) return clean.slice(0, maxLen) + (clean.length > maxLen ? '…' : '');
+        const start = Math.max(0, idx - 35);
+        const end   = Math.min(clean.length, idx + query.length + 75);
+        return (start > 0 ? '…' : '') + clean.slice(start, end) + (end < clean.length ? '…' : '');
+    }
+
+    function openSearchResults(results, query) {
+        const panel = document.getElementById('project-panel');
+        if (!panel) return;
+
+        document.getElementById('search-results-title').textContent =
+            'תוצאות חיפוש "' + query + '" (' + results.length + ')';
+
+        const list = document.getElementById('search-results-list');
+        list.innerHTML = '';
+
+        if (results.length === 0) {
+            const li = document.createElement('li');
+            li.className = 'search-result-empty';
+            li.textContent = 'לא נמצאו תוצאות';
+            list.appendChild(li);
+        } else {
+            results.forEach(function (pin) {
+                const li = document.createElement('li');
+                li.className = 'search-result-item';
+
+                const titleBtn = document.createElement('button');
+                titleBtn.className = 'search-result-title';
+                titleBtn.textContent = pin.title;
+                titleBtn.addEventListener('click', function () { openPinFromSearch(pin); });
+
+                const excerpt = document.createElement('p');
+                excerpt.className = 'search-result-excerpt';
+                excerpt.textContent = getExcerpt(pin.content || '', query);
+
+                li.appendChild(titleBtn);
+                if (pin.content) li.appendChild(excerpt);
+                list.appendChild(li);
+            });
+        }
+
+        panel.classList.remove('panel-pin-from-search');
+        panel.classList.add('panel-search-mode', 'panel-open');
+        panel.setAttribute('aria-hidden', 'false');
+    }
+
+    function openPinFromSearch(pin) {
+        fillPinDetails(pin);
+        const panel = document.getElementById('project-panel');
+        if (!panel) return;
+        panel.classList.remove('panel-search-mode');
+        panel.classList.add('panel-pin-from-search', 'panel-open');
+        panel.setAttribute('aria-hidden', 'false');
+    }
+
+    function backToSearchResults() {
+        if (!searchResults) return;
+        const query = (document.getElementById('map-search')?.value || '').trim().toLowerCase();
+        openSearchResults(searchResults, query);
     }
 
 })();
