@@ -221,10 +221,13 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                 <div class="vertical-divider-right"></div>
                 <p class="project-panel-description"></p>
             </div>
+
+            <div class="project-images-section" id="project-images"></div>
+
             <div class="project-panel-divider"></div>
 
             <ul class="project-panel-meta">
-                <li class="project-meta-item" id="pm-region">
+                <li class="project-meta-item" id="pm-location">
                     <svg class="meta-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path fill="currentColor" d="M248.25,83.64c-80.65-39.85-183.1,42.78-141.2,114.45,0,0,36.66,55.99,74.07,111.39,7.15,13.21,35.98,13.64,42.86.33,37.59-54.64,32.89-57.76,69.22-113.25,22.07-42.72,4.95-93.78-44.94-112.92ZM200,210.82c-81.26-1.18-81.25-99.24,0-100.42,81.25,1.18,81.24,99.24,0,100.42Z"/>
                     </svg>

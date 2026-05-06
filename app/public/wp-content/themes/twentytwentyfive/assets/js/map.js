@@ -40,6 +40,7 @@
         loadPins();
         setupFilters();
         setupSearch();
+        setupFullMapButton();
     });
 
     // ── Map init ─────────────────────────────────────────────────────────────
@@ -531,7 +532,7 @@
         }
 
         const terms = pin.taxonomies || {};
-        setMeta('pm-region',   (terms.geographic_region || []).map(t => t.name).join('، '));
+        setMeta('pm-location', pin.location || '');
         setMeta('pm-audience', (terms.target_audience   || []).map(t => t.name).join(' | '));
         setMeta('pm-domains',  (terms.domains           || []).map(t => t.name).join(' | '));
         setMeta('pm-cycle',    (terms.activity_cycle    || []).map(t => t.name).join(', '));
@@ -546,6 +547,18 @@
         if (linkEl) {
             if (pin.project_link) { linkEl.href = pin.project_link; linkEl.classList.remove('hidden'); }
             else                   { linkEl.classList.add('hidden'); }
+        }
+
+        // Featured image
+        const imagesSection = document.getElementById('project-images');
+        if (imagesSection) {
+            if (pin.featured_image) {
+                imagesSection.innerHTML = `<img src="${pin.featured_image}" alt="${pin.title}" class="project-image" loading="lazy">`;
+                imagesSection.style.display = 'block';
+            } else {
+                imagesSection.innerHTML = '';
+                imagesSection.style.display = 'none';
+            }
         }
 
         // Fill related projects carousel (NEW FROM CURRENT)
@@ -810,6 +823,19 @@
         if (!searchResults) return;
         const query = (document.getElementById('map-search')?.value || '').trim().toLowerCase();
         openSearchResults(searchResults, query);
+    }
+
+    // ── Full map reset button ─────────────────────────────────────────────────
+
+    function setupFullMapButton() {
+        const btn = document.getElementById('map-reset-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            clearAllFilters();
+            closeProjectPanel();
+            zoomToRegion(null);
+        });
     }
 
 })();

@@ -627,20 +627,26 @@ body {
 
 .project-panel-close {
   position: absolute;
-  top: 16px;
-  left: 20px;
+  top: 12px;
+  left: 12px;
+  width: 48px;
+  height: 48px;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--ink);
-  padding: 4px 8px;
+  padding: 0;
   opacity: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: opacity 0.15s;
+  pointer-events: all;
 }
 .project-panel-close:hover { opacity: 0.6; }
+.project-panel-close svg,
+.project-panel-close::before,
+.project-panel-close::after { pointer-events: none; }
 
 .project-panel-title {
   display: flex;
@@ -689,7 +695,7 @@ body {
   bottom: 0;
   width: 2px;
   background: var(--ink);
-  opacity: 0.2;
+  opacity: 1;
 }
 
 .project-panel-meta {
@@ -1021,6 +1027,7 @@ body {
 .project-panel.panel-search-mode .project-panel-meta,
 .project-panel.panel-search-mode #pm-org,
 .project-panel.panel-search-mode #pm-link,
+.project-panel.panel-search-mode #project-images,
 .project-panel.panel-search-mode #related-projects-section,
 .project-panel.panel-search-mode #related-divider,
 .project-panel.panel-search-mode .project-panel-divider { display: none; }
@@ -1204,4 +1211,22 @@ body {
   .filter-options-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* ─────────────────────────────────────────────
+   Project featured image
+───────────────────────────────────────────── */
+.project-images-section {
+  display: none;
+  margin-top: 20px;
+}
+
+.project-images-section img.project-image {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
