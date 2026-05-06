@@ -675,15 +675,24 @@ body {
 }
 
 .project-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   color: var(--ink);
   direction: rtl;
-  text-align: right;
+}
+
+.project-meta-row .meta-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--ink);
 }
 
 .project-meta-row strong {
   font-weight: 700;
-  margin-left: 3px;
+  white-space: nowrap;
 }
 
 .project-meta-row span {
