@@ -20,6 +20,8 @@
     let pinSymbolsReady = false;
     let gridManager     = null;   // KSM.GridManager instance, set after SVG loads
 
+    let selectedPinId = null;
+
     let activeFilters = {
         geographic: null,
         cycle:      null,
@@ -155,6 +157,18 @@
                 'cls-3': { fill: '#bcbcbc', opacity: '0.49' },
                 'cls-4': { fill: '#adadad' },
             }, 'ksm-pin-grey');
+
+            // ── Selected pin ──────────────────────────────────────────────────
+            const selDoc = parser.parseFromString(
+                await (await fetch('/wp-content/themes/twentytwentyfive/assets/images/selected_pin.svg')).text(),
+                'image/svg+xml'
+            );
+            resolveAndInject(selDoc, {
+                'cls-1': { fill: '#fff4e3', stroke: '#2b4a45', 'stroke-width': '1.4', 'stroke-miterlimit': '10' },
+                'cls-2': { fill: '#fff4e3' },
+                'cls-3': { fill: '#a1422b', stroke: '#fff4e3', 'stroke-miterlimit': '10' },
+                'cls-4': { fill: 'rgba(42,16,0,0.35)', opacity: '0.6' },
+            }, 'ksm-pin-selected');
 
         } catch (err) {
             console.error('Error loading pin symbols:', err);
@@ -311,21 +325,37 @@
             const filterType = input.closest('[data-filter-type]')?.dataset.filterType;
             if (!filterType) return;
 
-            input.addEventListener('change', function () {
-                if (!this.checked) return;
+            input.addEventListener('click', function () {
                 const term = this.dataset.term;
 
-                if (filterType === 'geographic_region') {
-                    setGeoFilter(term);
-                } else if (filterType === 'activity_cycle') {
-                    activeFilters.cycle = term;
-                } else if (filterType === 'target_audience') {
-                    activeFilters.audience = term;
-                } else if (filterType === 'domains') {
-                    activeFilters.domains = term;
-                }
+                const currentValue =
+                    filterType === 'geographic_region' ? activeFilters.geographic :
+                    filterType === 'activity_cycle'    ? activeFilters.cycle      :
+                    filterType === 'target_audience'   ? activeFilters.audience   :
+                    filterType === 'domains'           ? activeFilters.domains    : null;
 
-                applyFilters();
+                if (currentValue === term) {
+                    // Already active — toggle off
+                    this.checked = false;
+                    if (filterType === 'geographic_region') {
+                        setGeoFilter(null);
+                    } else {
+                        if (filterType === 'activity_cycle')  activeFilters.cycle     = null;
+                        if (filterType === 'target_audience') activeFilters.audience  = null;
+                        if (filterType === 'domains')         activeFilters.domains   = null;
+                        applyFilters();
+                    }
+                } else {
+                    // Not yet active — select it
+                    if (filterType === 'geographic_region') {
+                        setGeoFilter(term);
+                    } else {
+                        if (filterType === 'activity_cycle')  activeFilters.cycle     = term;
+                        if (filterType === 'target_audience') activeFilters.audience  = term;
+                        if (filterType === 'domains')         activeFilters.domains   = term;
+                        applyFilters();
+                    }
+                }
             });
         });
 
@@ -420,16 +450,66 @@
             inner.appendChild(use);
             g.appendChild(inner);
             g.setAttribute('data-pin-title', pin.title);
-            g.addEventListener('mouseover', e => pinTooltipShow(e, pin.title));
+            g.addEventListener('mouseenter', e => pinTooltipShow(e, pin.title));
             g.addEventListener('mousemove', e => pinTooltipMove(e));
-            g.addEventListener('mouseout', () => pinTooltipHide());
+            g.addEventListener('mouseleave', () => pinTooltipHide());
             g.addEventListener('click', e => {
                 e.stopPropagation();
-                openProjectPanel(pin);
+                if (selectedPinId === pin.id) {
+                    closeProjectPanel();
+                } else {
+                    openProjectPanel(pin);
+                }
             });
 
             markersGroup.appendChild(g);
         });
+
+        // Re-apply selected state after a full re-render
+        if (selectedPinId !== null) {
+            const el = document.querySelector(`#pin-markers [data-pin-id="${selectedPinId}"]`);
+            if (el) { applyPinSymbol(el, true); el.parentNode.appendChild(el); }
+        }
+    }
+
+    // ── Selected pin visual ──────────────────────────────────────────────────
+
+    function applyPinSymbol(pinEl, isSelected) {
+        const id      = parseInt(pinEl.getAttribute('data-pin-id'));
+        const typeNum = (id % 2 === 0) ? 1 : 2;
+        const use     = pinEl.querySelector('use');
+        if (!use) return;
+
+        if (isSelected) {
+            use.setAttribute('href',   `#ksm-pin-selected-${typeNum}`);
+            use.setAttribute('width',  '90');
+            use.setAttribute('height', '90');
+            use.setAttribute('x',      '-45');
+            use.setAttribute('y',      '-90');
+        } else {
+            const inactive = pinEl.classList.contains('map-pin--inactive');
+            use.setAttribute('href',   `#${inactive ? 'ksm-pin-grey' : 'ksm-pin'}-${typeNum}`);
+            use.setAttribute('width',  '74.86');
+            use.setAttribute('height', '74.86');
+            use.setAttribute('x',      '-37.43');
+            use.setAttribute('y',      '-74.86');
+        }
+    }
+
+    function setSelectedPin(pinId) {
+        if (selectedPinId !== null) {
+            const old = document.querySelector(`#pin-markers [data-pin-id="${selectedPinId}"]`);
+            if (old) applyPinSymbol(old, false);
+        }
+        selectedPinId = pinId;
+        if (pinId !== null) {
+            const el = document.querySelector(`#pin-markers [data-pin-id="${pinId}"]`);
+            if (el) {
+                applyPinSymbol(el, true);
+                // Bring to front in SVG paint order
+                el.parentNode.appendChild(el);
+            }
+        }
     }
 
     // ── Pin tooltips ─────────────────────────────────────────────────────────
@@ -562,6 +642,57 @@
 
         // Fill related projects carousel (NEW FROM CURRENT)
         fillRelatedProjects(pin);
+        collapseConsecutiveDividers();
+    }
+
+    function collapseConsecutiveDividers() {
+        const inner = document.querySelector('#project-panel .project-panel-inner');
+        if (!inner) return;
+
+        const children = Array.from(inner.children);
+
+        // Reset all static dividers so we can re-evaluate
+        children.forEach(el => {
+            if (el.classList.contains('project-panel-divider') &&
+                el.id !== 'related-divider') {
+                el.classList.remove('hidden');
+            }
+        });
+
+        function isEffectivelyVisible(el) {
+            if (el.classList.contains('hidden')) return false;
+            // Meta wrapper has no hidden class but is empty when all rows are hidden
+            if (el.classList.contains('project-panel-meta')) {
+                return Array.from(el.querySelectorAll('.project-meta-row'))
+                    .some(row => !row.classList.contains('hidden'));
+            }
+            return true;
+        }
+
+        // Suppress consecutive dividers — keep only the first of each run
+        let prevWasDivider = false;
+        for (const el of children) {
+            if (!isEffectivelyVisible(el)) continue;
+            const isDivider = el.classList.contains('project-panel-divider');
+            if (isDivider) {
+                if (prevWasDivider) {
+                    el.classList.add('hidden');
+                } else {
+                    prevWasDivider = true;
+                }
+            } else {
+                prevWasDivider = false;
+            }
+        }
+
+        // Suppress a trailing divider (last visible element is a divider)
+        for (let i = children.length - 1; i >= 0; i--) {
+            if (!isEffectivelyVisible(children[i])) continue;
+            if (children[i].classList.contains('project-panel-divider')) {
+                children[i].classList.add('hidden');
+            }
+            break;
+        }
     }
 
     // ── CAROUSEL IMPLEMENTATION (FROM CURRENT) ───────────────────────────────
@@ -691,6 +822,7 @@
         panel.classList.remove('panel-search-mode', 'panel-pin-from-search');
         panel.classList.add('panel-open');
         panel.setAttribute('aria-hidden', 'false');
+        setSelectedPin(pin.id);
     }
 
     function closeProjectPanel() {
@@ -698,6 +830,7 @@
         if (!panel) return;
         panel.classList.remove('panel-open', 'panel-search-mode', 'panel-pin-from-search');
         panel.setAttribute('aria-hidden', 'true');
+        setSelectedPin(null);
     }
 
     // Close on X button
@@ -755,6 +888,16 @@
         if (title === query)       return 100;
         if (title.includes(query)) return 80;
         if (desc.includes(query))  return 40;
+
+        const taxonomies = pin.taxonomies || {};
+        for (const terms of Object.values(taxonomies)) {
+            if (!Array.isArray(terms)) continue;
+            for (const term of terms) {
+                const name = (term.name || '').toLowerCase();
+                if (name === query)       return 60;
+                if (name.includes(query)) return 30;
+            }
+        }
         return 0;
     }
 

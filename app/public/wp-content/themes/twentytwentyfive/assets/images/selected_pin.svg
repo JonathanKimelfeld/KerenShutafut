@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_8" data-name="Layer 8" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 400 400">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke: #2b4a45;
+        stroke-width: 1.4px;
+      }
+
+      .cls-1, .cls-2 {
+        fill: #fff4e3;
+      }
+
+      .cls-1, .cls-3 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-3 {
+        fill: #a1422b;
+        stroke: #fff4e3;
+      }
+
+      .cls-4 {
+        fill: url(#radial-gradient);
+      }
+    </style>
+    <radialGradient id="radial-gradient" cx="3560.54" cy="335.36" fx="3560.54" fy="335.36" r="62.53" gradientTransform="translate(3764.18 190.7) rotate(180) scale(1 -.43)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2a1000" stop-opacity=".7"/>
+      <stop offset=".56" stop-color="#0c0400" stop-opacity=".21"/>
+      <stop offset=".94" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse class="cls-4" cx="203.65" cy="336.86" rx="81.47" ry="28.69"/>
+  <path class="cls-2" d="M208.72,323.43l13-159.06c.18-2.19-1.55-4.06-3.74-4.06h-28.65c-2.19,0-3.92,1.87-3.74,4.06l13,159.06c.51,6.23,9.62,6.23,10.13,0Z"/>
+  <circle class="cls-1" cx="203.65" cy="123.36" r="93.79"/>
+  <circle class="cls-3" cx="203.65" cy="123.36" r="64.14"/>
+  <path class="cls-2" d="M191.92,76.53c-4.7-1.96-13.64.51-14.97.89-12.71,3.6-22.18,17.4-23.88,25.92-1.03,5.16.74,10.39,3.82,9.99,3.99-.52,5.69-9.89,16.71-15.25,7.92-3.85,16.07-8.64,20.58-12.15,4.88-3.79,3.51-6.99-2.26-9.41Z"/>
+</svg>
