@@ -143,12 +143,16 @@ function keren_shutafut_get_pins() {
         $pos          = ksm_pin_svg_position( $pin->ID, $region_name );
 
         $result[] = array(
-            'id'              => $pin->ID,
-            'title'           => $pin->post_title,
-            'content'         => wp_strip_all_tags( $pin->post_content ),
-            'project_link'    => $project_link ?: null,
-            'operating_org'   => $operating_org ?: null,
-            'location'        => get_post_meta( $pin->ID, 'location', true ) ?: null,
+            'id'               => $pin->ID,
+            'title'            => $pin->post_title,
+            'title_en'         => get_post_meta( $pin->ID, 'title_en',         true ) ?: null,
+            'content'          => wp_strip_all_tags( $pin->post_content ),
+            'content_en'       => get_post_meta( $pin->ID, 'content_en',       true ) ?: null,
+            'project_link'     => $project_link ?: null,
+            'operating_org'    => $operating_org ?: null,
+            'operating_org_en' => get_post_meta( $pin->ID, 'operating_org_en', true ) ?: null,
+            'location'         => get_post_meta( $pin->ID, 'location',         true ) ?: null,
+            'location_en'      => get_post_meta( $pin->ID, 'location_en',      true ) ?: null,
             'featured_image'  => get_the_post_thumbnail_url( $pin->ID, 'large' ) ?: null,
             // Coordinate data: JS GridManager uses latitude/longitude directly.
             // coordinates_dms is the human-readable source field (optional).

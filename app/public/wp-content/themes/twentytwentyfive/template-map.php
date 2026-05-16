@@ -19,13 +19,21 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
         <div id="map-tooltip"></div>
     </div>
 
+    <!-- Language switcher -->
+    <button id="lang-switcher" class="lang-switcher" aria-label="שפה / Language">
+        <span class="lang-opt" data-lang-opt="he">עב</span>
+        <span class="lang-sep">|</span>
+        <span class="lang-opt" data-lang-opt="en">EN</span>
+    </button>
+
     <!-- Filter panel — fixed right overlay -->
-    <aside class="filter-panel" dir="rtl" role="complementary" aria-label="פאנל סינון">
+    <aside class="filter-panel" dir="rtl" role="complementary"
+           aria-label="פאנל סינון" data-i18n-aria="filterPanelAriaLabel">
         <div class="filter-panel-inner">
 
             <div class="filter-panel-top">
-                <h1 class="filter-panel-title">מפת שׁוּתָּפוּת</h1>
-                <p class="panel-description">לפניך מפה עליה מופיעה פריסה של מיזמים הנתמכים על ידי <strong>קרן שותפות</strong>. מיזמים אלה, עוסקים בחברה משותפת, בקידום ערכים של חיים משותפים בין הקבוצות השונות המרכיבות את החברה הישראלית.<br>
+                <h1 class="filter-panel-title" data-i18n="panelTitle">מפת שׁוּתָּפוּת</h1>
+                <p class="panel-description" data-i18n="panelDescription">לפניך מפה עליה מופיעה פריסה של מיזמים הנתמכים על ידי <strong>קרן שותפות</strong>. מיזמים אלה, עוסקים בחברה משותפת, בקידום ערכים של חיים משותפים בין הקבוצות השונות המרכיבות את החברה הישראלית.<br>
                 בעשייתם מראים המיזמים את מגוון האפשרויות המקוריות והמעניינות, לקידום סובלנות, שוויון ויצירת חיים בשותפות בישראל.</p>
             </div>
 
@@ -34,8 +42,9 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                 <div class="search-input-group">
                     <input type="text" id="map-search" class="map-search-input"
                            placeholder="חפש פרויקט..." dir="rtl" autocomplete="off"
-                           aria-label="חיפוש פרויקטים">
-                    <button id="map-search-btn" class="map-search-btn" aria-label="חפש">
+                           aria-label="חיפוש פרויקטים"
+                           data-i18n="searchPlaceholder" data-i18n-aria="searchAriaLabel">
+                    <button id="map-search-btn" class="map-search-btn" aria-label="חפש" data-i18n-aria="searchBtnAriaLabel">
                         <svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                             <path fill="currentColor" d="M8.32,7.26c-1.23-1.06-.89-.62-2.12-1.67-.02-.02-.04-.04-.06-.06-.24-.28-.3-.67-.18-1.01.09-.24.14-.49.14-.76,0-1.28-1.11-2.36-2.39-2.36S1.46,2.47,1.46,3.75c0,1.24,1,2.25,2.24,2.26.27,0,.52-.04.77-.12.27-.08.56-.05.8.08.14.08.27.15.35.22,1.23,1.06.83.76,2.06,1.82.25.21.52.32.7.11l.06-.06c.18-.21.14-.59-.11-.8ZM2.12,3.7c0-1.17.9-1.68,1.6-1.68s1.64.5,1.64,1.68c0,.69-.5,1.74-1.64,1.74-.69,0-1.6-.81-1.6-1.74Z"/>
                         </svg>
@@ -50,13 +59,13 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                         <path fill="#2b4a45" d="M13.89,0c-7.67,0-13.89,6.27-13.89,13.94s6.23,13.75,13.89,13.75,13.56-6.08,13.56-13.75-5.9-13.94-13.56-13.94ZM13.89,20.91c-4.15,0-7.42-2.83-7.42-6.98s3.27-7.8,7.42-7.8,7.57,3.65,7.57,7.8-3.42,6.98-7.57,6.98Z"/>
                         <path fill="#2b4a45" d="M17.93,13.94c0,2.39-1.65,4.24-4.04,4.24s-4.06-1.85-4.06-4.24,1.68-3.99,4.06-3.99,4.04,1.61,4.04,3.99Z"/>
                     </svg>
-                    <h2 class="filter-group-title">קהל יעד</h2>
+                    <h2 class="filter-group-title" data-i18n="filterAudience">קהל יעד</h2>
                     <svg class="chevron-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
                 <div class="filter-collapsible-body">
-                <div class="filter-options-grid" data-filter-type="target_audience" role="radiogroup" aria-label="בחר קהל יעד">
+                <div class="filter-options-grid" data-filter-type="target_audience" role="radiogroup" aria-label="בחר קהל יעד" data-i18n-aria="filterAudienceGroup">
                     <?php
                     $audiences = get_terms(['taxonomy' => 'target_audience', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
                     $label_overrides = [ 'אנשי מקצוע ופעילים' => 'אקטיביסטים' ];
@@ -83,13 +92,13 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                     <svg class="section-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path fill="#2b4a45" d="M248.25,83.64c-80.65-39.85-183.1,42.78-141.2,114.45,0,0,36.66,55.99,74.07,111.39,7.15,13.21,35.98,13.64,42.86.33,37.59-54.64,32.89-57.76,69.22-113.25,22.07-42.72,4.95-93.78-44.94-112.92ZM200,210.82c-81.26-1.18-81.25-99.24,0-100.42,81.25,1.18,81.24,99.24,0,100.42Z"/>
                     </svg>
-                    <h2 class="filter-group-title">מיקום</h2>
+                    <h2 class="filter-group-title" data-i18n="filterLocation">מיקום</h2>
                     <svg class="chevron-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
                 <div class="filter-collapsible-body">
-                <div class="filter-options-grid" data-filter-type="geographic_region" role="radiogroup" aria-label="בחר מיקום">
+                <div class="filter-options-grid" data-filter-type="geographic_region" role="radiogroup" aria-label="בחר מיקום" data-i18n-aria="filterLocationGroup">
                     <?php
                     $regions = get_terms(['taxonomy' => 'geographic_region', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
                     if (!is_wp_error($regions)) {
@@ -114,13 +123,13 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                         <path fill="#2b4a45" d="M311.71,321.02h-5.62c-18.3,0-24.46-15.19-24.46-33.49,0-90.07-2.74-90.07-2.74-180.15,0-18.3,14.52-35.56,32.81-35.56h6.12c18.3,0,28.07,17.26,28.07,35.56,0,90.07,1.45,90.07,1.45,180.15,0,18.3-17.34,33.49-35.63,33.49Z"/>
                         <path fill="#2b4a45" d="M208.17,317.12l-7.09-.03c-18.3,0-30.44-11.26-30.44-29.56,0-90.07,4.42-90.07,4.42-180.15,0-18.3,14.82-34.84,33.12-34.84l7.35-.27c18.3,0,28.14,16.81,28.14,35.1,0,90.07-5.07,90.07-5.07,180.15,0,18.3-12.13,29.59-30.42,29.59Z"/>
                     </svg>
-                    <h2 class="filter-group-title">מחזור</h2>
+                    <h2 class="filter-group-title" data-i18n="filterCycle">מחזור</h2>
                     <svg class="chevron-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
                 <div class="filter-collapsible-body">
-                <div class="filter-options-grid" data-filter-type="activity_cycle" role="radiogroup" aria-label="בחר מחזור פעילות">
+                <div class="filter-options-grid" data-filter-type="activity_cycle" role="radiogroup" aria-label="בחר מחזור פעילות" data-i18n-aria="filterCycleGroup">
                     <?php
                     $cycles = get_terms(['taxonomy' => 'activity_cycle', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
                     if (!is_wp_error($cycles)) {
@@ -145,13 +154,13 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                         <path fill="#2b4a45" d="M113.11,307.24c-22.92-8.61-38.5-6.72-38.5-31.2,0-33.86,5.86-46.97,37.86-58.04,59.05-20.43,82.08-43.09,126.05,1.3,39.77,40.15,18.04,66.31-13.32,113.32-31.66,47.46-58.84-5.37-112.1-25.38Z"/>
                         <path fill="#2b4a45" d="M198.6,104.41c11.68,42.33-26.47,46.64-69.71,54.31-47.66,8.45-82.23,22.09-95.1-24.57-13.58-49.2,21.12-56.4,65.68-81.28,52.37-29.24,84.44-1.68,99.13,51.54Z"/>
                     </svg>
-                    <h2 class="filter-group-title">תחום</h2>
+                    <h2 class="filter-group-title" data-i18n="filterDomain">תחום</h2>
                     <svg class="chevron-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
                 <div class="filter-collapsible-body">
-                <div class="filter-options-grid" data-filter-type="domains" role="radiogroup" aria-label="בחר תחום">
+                <div class="filter-options-grid" data-filter-type="domains" role="radiogroup" aria-label="בחר תחום" data-i18n-aria="filterDomainGroup">
                     <?php
                     $domains = get_terms(['taxonomy' => 'domains', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
                     if (!is_wp_error($domains)) {
@@ -171,7 +180,7 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
             <!-- נקה הכל -->
             <div class="filter-clear-row">
                 <button class="clear-all-btn" id="clear-all-filters">
-                    <strong>נקה הכל</strong>
+                    <strong data-i18n="clearAll">נקה הכל</strong>
                     <svg class="clear-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path fill="currentColor" d="M199.2,33.79c-90.2,0-158.45,76.18-158.45,166.39s68.25,158.87,158.45,158.87,168.03-68.67,168.03-158.87S289.4,33.79,199.2,33.79ZM199.2,107.29c14.35,0,27.46,3.89,38.87,10.5-6.73,14.94-19.49,32.8-43.66,43.92-36.33,16.71-59.39,67.69-68.34,91.11-12.45-14.3-20.18-32.38-20.18-52.65,0-48.84,44.47-92.89,93.31-92.89ZM199.2,285.55c-9.2,0-18.24-1.3-26.86-3.73,9.17-20.3,24.91-42.52,51.78-53.01,25.27-9.87,43.69-30.01,56.51-49.75,1.45,6.86,2.29,13.92,2.29,21.12,0,48.84-34.89,85.37-83.73,85.37Z"/>
                     </svg>
@@ -185,7 +194,7 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
     <div id="project-panel" class="project-panel" role="dialog" aria-modal="true" aria-hidden="true" dir="rtl">
         <div class="project-panel-inner">
 
-            <button class="project-panel-close" aria-label="סגור">
+            <button class="project-panel-close" aria-label="סגור" data-i18n-aria="closeBtnAriaLabel">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <line x1="1" y1="1" x2="15" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     <line x1="15" y1="1" x2="1" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -200,11 +209,12 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
             </div>
 
             <!-- Back to results button (active when panel-pin-from-search) -->
-            <button class="back-to-results-btn" id="back-to-results-btn" aria-label="חזרה לתוצאות החיפוש">
+            <button class="back-to-results-btn" id="back-to-results-btn"
+                    aria-label="חזרה לתוצאות החיפוש" data-i18n-aria="backToResultsAriaLabel">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="14" height="14">
                     <polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                חזרה לתוצאות
+                <span data-i18n="backToResults">חזרה לתוצאות</span>
             </button>
 
             <h2 class="project-panel-title">
@@ -225,14 +235,14 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                     <svg class="meta-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path fill="currentColor" d="M248.25,83.64c-80.65-39.85-183.1,42.78-141.2,114.45,0,0,36.66,55.99,74.07,111.39,7.15,13.21,35.98,13.64,42.86.33,37.59-54.64,32.89-57.76,69.22-113.25,22.07-42.72,4.95-93.78-44.94-112.92ZM200,210.82c-81.26-1.18-81.25-99.24,0-100.42,81.25,1.18,81.24,99.24,0,100.42Z"/>
                     </svg>
-                    <strong>מיקום:</strong> <span></span>
+                    <strong data-i18n="metaLocation">מיקום:</strong> <span></span>
                 </div>
                 <div class="project-meta-row hidden" id="pm-audience">
                     <svg class="meta-icon" viewBox="0 0 27.45 27.69" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path fill="currentColor" d="M13.89,0c-7.67,0-13.89,6.27-13.89,13.94s6.23,13.75,13.89,13.75,13.56-6.08,13.56-13.75-5.9-13.94-13.56-13.94ZM13.89,20.91c-4.15,0-7.42-2.83-7.42-6.98s3.27-7.8,7.42-7.8,7.57,3.65,7.57,7.8-3.42,6.98-7.57,6.98Z"/>
                         <path fill="currentColor" d="M17.93,13.94c0,2.39-1.65,4.24-4.04,4.24s-4.06-1.85-4.06-4.24,1.68-3.99,4.06-3.99,4.04,1.61,4.04,3.99Z"/>
                     </svg>
-                    <strong>קהל יעד:</strong> <span></span>
+                    <strong data-i18n="metaAudience">קהל יעד:</strong> <span></span>
                 </div>
                 <div class="project-meta-row hidden" id="pm-cycle">
                     <svg class="meta-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -240,7 +250,7 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                         <path fill="currentColor" d="M311.71,321.02h-5.62c-18.3,0-24.46-15.19-24.46-33.49,0-90.07-2.74-90.07-2.74-180.15,0-18.3,14.52-35.56,32.81-35.56h6.12c18.3,0,28.07,17.26,28.07,35.56,0,90.07,1.45,90.07,1.45,180.15,0,18.3-17.34,33.49-35.63,33.49Z"/>
                         <path fill="currentColor" d="M208.17,317.12l-7.09-.03c-18.3,0-30.44-11.26-30.44-29.56,0-90.07,4.42-90.07,4.42-180.15,0-18.3,14.82-34.84,33.12-34.84l7.35-.27c18.3,0,28.14,16.81,28.14,35.1,0,90.07-5.07,90.07-5.07,180.15,0,18.3-12.13,29.59-30.42,29.59Z"/>
                     </svg>
-                    <strong>מחזור:</strong> <span></span>
+                    <strong data-i18n="metaCycle">מחזור:</strong> <span></span>
                 </div>
                 <div class="project-meta-row hidden" id="pm-domains">
                     <svg class="meta-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -248,37 +258,37 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                         <path fill="currentColor" d="M113.11,307.24c-22.92-8.61-38.5-6.72-38.5-31.2,0-33.86,5.86-46.97,37.86-58.04,59.05-20.43,82.08-43.09,126.05,1.3,39.77,40.15,18.04,66.31-13.32,113.32-31.66,47.46-58.84-5.37-112.1-25.38Z"/>
                         <path fill="currentColor" d="M198.6,104.41c11.68,42.33-26.47,46.64-69.71,54.31-47.66,8.45-82.23,22.09-95.1-24.57-13.58-49.2,21.12-56.4,65.68-81.28,52.37-29.24,84.44-1.68,99.13,51.54Z"/>
                     </svg>
-                    <strong>תחום:</strong> <span></span>
+                    <strong data-i18n="metaDomain">תחום:</strong> <span></span>
                 </div>
             </div>
             <div class="project-panel-divider"></div>
 
             <div class="project-panel-org" id="pm-org">
-                <span class="org-label">ארגון מפעיל:</span>
+                <span class="org-label" data-i18n="orgLabel">ארגון מפעיל:</span>
                 <span class="org-name"></span>
             </div>
             <div class="project-panel-divider"></div>
 
             <a class="project-panel-link" id="pm-link" href="#" target="_blank" rel="noopener noreferrer">
                 <img class="meta-icon" src="<?php echo get_template_directory_uri(); ?>/assets/images/link_icon.svg" alt="" aria-hidden="true">
-                <strong>לינק לאתר</strong>
+                <strong data-i18n="linkLabel">לינק לאתר</strong>
             </a>
 
             <div class="project-panel-divider" id="related-divider"></div>
 
             <div class="related-projects-section" id="related-projects-section">
-                <p class="related-projects-title">אולי יעניין אותך גם:</p>
+                <p class="related-projects-title" data-i18n="relatedTitle">אולי יעניין אותך גם:</p>
                 <div class="related-carousel">
                     <ul class="carousel-track" id="related-projects-list"></ul>
                     <div class="carousel-footer">
                         <!-- RTL: prev is rightmost (right chevron), next is leftmost (left chevron) -->
-                        <button class="carousel-arrow carousel-prev" aria-label="הקודם">
+                        <button class="carousel-arrow carousel-prev" aria-label="הקודם" data-i18n-aria="carouselPrev">
                             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
                         <div class="carousel-dots" id="carousel-dots"></div>
-                        <button class="carousel-arrow carousel-next" aria-label="הבא">
+                        <button class="carousel-arrow carousel-next" aria-label="הבא" data-i18n-aria="carouselNext">
                             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>

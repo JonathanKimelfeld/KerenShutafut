@@ -1,0 +1,211 @@
+.ks-positioner-wrap {
+    margin: 20px 20px 20px 0;
+}
+
+.ks-positioner-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Sidebar */
+.ks-sidebar {
+    width: 350px;
+    flex-shrink: 0;
+}
+
+.sidebar-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.sidebar-section h2,
+.sidebar-section h3 {
+    margin-top: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Search and Filter */
+.ks-search,
+.ks-filter {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+}
+
+/* Pin List */
+.ks-pin-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+}
+
+.ks-pin-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f1;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.ks-pin-item:hover {
+    background-color: #f6f7f7;
+}
+
+.ks-pin-item.selected {
+    background-color: #e5f5ff;
+    border-left: 3px solid #2271b1;
+}
+
+.ks-pin-item.positioned .pin-status {
+    color: #00a32a;
+}
+
+.ks-pin-item:not(.positioned) .pin-status {
+    color: #dba617;
+}
+
+.pin-title {
+    flex: 1;
+    font-size: 13px;
+}
+
+.pin-coords {
+    font-size: 11px;
+    color: #757575;
+    font-family: monospace;
+}
+
+/* Selected Pin Info */
+.selected-details {
+    font-size: 13px;
+}
+
+.selected-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.coords-display {
+    font-family: monospace;
+    color: #2271b1;
+}
+
+/* Instructions */
+.instructions ol {
+    margin: 10px 0;
+    padding-right: 20px;
+    font-size: 13px;
+}
+
+.legend {
+    margin-top: 15px;
+    font-size: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #dcdcde;
+}
+
+.legend p {
+    margin: 5px 0;
+}
+
+/* Map Area */
+.ks-map-area {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+}
+
+.map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #dcdcde;
+}
+
+.map-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.map-controls label {
+    font-size: 13px;
+}
+
+.map-canvas {
+    position: relative;
+    background: #fafafa;
+    overflow: auto;
+    height: 700px;
+}
+
+#ks-svg-map {
+    display: block;
+    width: 100%;
+    height: auto;
+    cursor: crosshair;
+}
+
+#ks-svg-map.pin-selected {
+    cursor: crosshair;
+}
+
+/* Pin markers on map */
+.map-pin-marker {
+    cursor: pointer;
+}
+
+.map-pin-marker circle {
+    fill: #2271b1;
+    stroke: #fff;
+    stroke-width: 2;
+}
+
+.map-pin-marker:hover circle {
+    fill: #135e96;
+}
+
+.map-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    border-top: 1px solid #dcdcde;
+    font-size: 12px;
+    background: #f6f7f7;
+}
+
+.coordinates {
+    font-family: monospace;
+}
+
+.save-status {
+    color: #00a32a;
+}
+
+.save-status.error {
+    color: #d63638;
+}
+
+/* RTL Support */
+[dir="rtl"] .ks-positioner-container {
+    direction: rtl;
+}
+
+[dir="rtl"] .ks-pin-item.selected {
+    border-left: none;
+    border-right: 3px solid #2271b1;
+}
+
+[dir="rtl"] .instructions ol {
+    padding-right: 0;
+    padding-left: 20px;
+}

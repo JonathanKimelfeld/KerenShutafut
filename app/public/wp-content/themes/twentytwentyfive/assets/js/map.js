@@ -15,6 +15,220 @@
         'דרום':    'south_zoom',
     };
 
+    // ── i18n ─────────────────────────────────────────────────────────────────
+
+    const TRANSLATIONS = {
+        he: {
+            panelTitle:           'מפת שׁוּתָּפוּת',
+            panelDescription:     'לפניך מפה עליה מופיעה פריסה של מיזמים הנתמכים על ידי <strong>קרן שותפות</strong>. מיזמים אלה, עוסקים בחברה משותפת, בקידום ערכים של חיים משותפים בין הקבוצות השונות המרכיבות את החברה הישראלית.<br>בעשייתם מראים המיזמים את מגוון האפשרויות המקוריות והמעניינות, לקידום סובלנות, שוויון ויצירת חיים בשותפות בישראל.',
+            searchPlaceholder:    'חפש פרויקט...',
+            searchAriaLabel:      'חיפוש פרויקטים',
+            searchBtnAriaLabel:   'חפש',
+            filterAudience:       'קהל יעד',
+            filterLocation:       'מיקום',
+            filterCycle:          'מחזור',
+            filterDomain:         'תחום',
+            filterAudienceGroup:  'בחר קהל יעד',
+            filterLocationGroup:  'בחר מיקום',
+            filterCycleGroup:     'בחר מחזור פעילות',
+            filterDomainGroup:    'בחר תחום',
+            filterPanelAriaLabel: 'פאנל סינון',
+            clearAll:             'נקה הכל',
+            closeBtnAriaLabel:    'סגור',
+            backToResults:        'חזרה לתוצאות',
+            backToResultsAriaLabel: 'חזרה לתוצאות החיפוש',
+            metaLocation:         'מיקום:',
+            metaAudience:         'קהל יעד:',
+            metaCycle:            'מחזור:',
+            metaDomain:           'תחום:',
+            orgLabel:             'ארגון מפעיל:',
+            linkLabel:            'לינק לאתר',
+            relatedTitle:         'אולי יעניין אותך גם:',
+            carouselPrev:         'הקודם',
+            carouselNext:         'הבא',
+            carouselDotLabel:     'מיזם',
+            searchResultsTitle:   'תוצאות חיפוש',
+            noResults:            'לא נמצאו תוצאות',
+        },
+        en: {
+            panelTitle:           'Partnership Map',
+            panelDescription:     'This map displays projects supported by <strong>Keren Shutafut</strong>. These projects promote a shared society and the values of coexistence among the diverse groups that make up Israeli society.<br>Through their work, the projects showcase original and interesting ways to advance tolerance, equality, and a life of partnership in Israel.',
+            searchPlaceholder:    'Search project...',
+            searchAriaLabel:      'Search projects',
+            searchBtnAriaLabel:   'Search',
+            filterAudience:       'Target Audience',
+            filterLocation:       'Location',
+            filterCycle:          'Cycle',
+            filterDomain:         'Domain',
+            filterAudienceGroup:  'Select Target Audience',
+            filterLocationGroup:  'Select Location',
+            filterCycleGroup:     'Select Activity Cycle',
+            filterDomainGroup:    'Select Domain',
+            filterPanelAriaLabel: 'Filter panel',
+            clearAll:             'Clear All',
+            closeBtnAriaLabel:    'Close',
+            backToResults:        'Back to results',
+            backToResultsAriaLabel: 'Back to search results',
+            metaLocation:         'Location:',
+            metaAudience:         'Target Audience:',
+            metaCycle:            'Cycle:',
+            metaDomain:           'Domain:',
+            orgLabel:             'Operating Organization:',
+            linkLabel:            'Website',
+            relatedTitle:         'You might also like:',
+            carouselPrev:         'Previous',
+            carouselNext:         'Next',
+            carouselDotLabel:     'Project',
+            searchResultsTitle:   'Search results',
+            noResults:            'No results found',
+        },
+    };
+
+    const TERM_TRANSLATIONS = {
+        'צפון':                  'North',
+        'מרכז':                  'Center',
+        'דרום':                  'South',
+        'ירושלים':               'Jerusalem',
+        'כרמל':                  'Carmel',
+        'מחזור א':               'Cycle A',
+        'מחזור ב':               'Cycle B',
+        'מחזור ג':               'Cycle C',
+        'מחזור ד':               'Cycle D',
+        'מחזור ה':               'Cycle E',
+        'מחזור ו':               'Cycle F',
+        'יהודים וערבים':         'Jews and Arabs',
+        'נוער וילדים':           'Youth and Children',
+        'קהל מגוון':             'Diverse Audience',
+        'נשים':                  'Women',
+        'צעירים וסטודנטים':      'Young Adults and Students',
+        'אנשי מקצוע ופעילים':    'Professionals and Activists',
+        'דתיים וחילונים':        'Religious and Secular',
+        'להט"ב':                 'LGBTQ+',
+        'מוגבלויות':             'People with Disabilities',
+        'אומנות ותרבות':         'Arts and Culture',
+        'חינוך':                 'Education',
+        'טבע וסביבה':            'Nature and Environment',
+        'לימוד בין-דתי':         'Interfaith Learning',
+        'מוסיקה':                'Music',
+        'מנהיגות ויזמות':        'Leadership and Entrepreneurship',
+        'ספורט':                 'Sports',
+        'קהילה ורווחה':          'Community and Welfare',
+        'שפה':                   'Language',
+    };
+
+    // Hebrew display overrides (label_overrides from PHP must be mirrored here)
+    const HE_LABEL_OVERRIDES = {
+        'אנשי מקצוע ופעילים': 'אקטיביסטים',
+    };
+
+    let currentLang     = localStorage.getItem('ks-lang') || 'he';
+    let lastSearchQuery = null;
+    let currentOpenPin  = null;
+
+    function t(key) {
+        return (TRANSLATIONS[currentLang] || TRANSLATIONS.he)[key]
+            ?? TRANSLATIONS.he[key]
+            ?? key;
+    }
+
+    function termLabel(hebrewName) {
+        if (currentLang === 'en') return TERM_TRANSLATIONS[hebrewName] || hebrewName;
+        return HE_LABEL_OVERRIDES[hebrewName] || hebrewName;
+    }
+
+    function setLang(lang) {
+        currentLang = lang;
+        localStorage.setItem('ks-lang', lang);
+        applyLanguage();
+    }
+
+    function applyLanguage() {
+        const isHe = currentLang === 'he';
+        const html  = document.documentElement;
+        html.setAttribute('data-lang', currentLang);
+        html.setAttribute('lang',      currentLang);
+        html.setAttribute('dir',       isHe ? 'rtl' : 'ltr');
+
+        // Static text
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.dataset.i18n;
+            const val = t(key);
+            if (key === 'panelDescription') {
+                el.innerHTML = val;
+            } else if (el.tagName === 'INPUT') {
+                el.placeholder = val;
+            } else {
+                el.textContent = val;
+            }
+        });
+
+        // Aria labels
+        document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+            el.setAttribute('aria-label', t(el.dataset.i18nAria));
+        });
+
+        // Taxonomy filter option labels
+        document.querySelectorAll('.filter-options-grid label').forEach(label => {
+            const input  = label.querySelector('input[data-term]');
+            const textEl = label.querySelector('.option-text');
+            if (input && textEl) textEl.textContent = termLabel(input.dataset.term);
+        });
+
+        // Carousel dots
+        document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+            dot.setAttribute('aria-label', `${t('carouselDotLabel')} ${i + 1}`);
+        });
+
+        // Refresh open search results title
+        if (lastSearchQuery !== null) {
+            const titleEl = document.getElementById('search-results-title');
+            if (titleEl && titleEl.textContent) {
+                titleEl.textContent =
+                    `${t('searchResultsTitle')} "${lastSearchQuery}" (${(searchResults || []).length})`;
+            }
+        }
+
+        // Re-render open pin details so taxonomy values translate
+        const panel = document.getElementById('project-panel');
+        if (currentOpenPin && panel?.classList.contains('panel-open')) {
+            fillPinDetails(currentOpenPin);
+        }
+
+        // Re-position immediately so the container has correct bounds before zoom math,
+        // then re-zoom in rAF once the browser has applied the layout changes.
+        repositionMapContainer();
+        requestAnimationFrame(() => {
+            repositionMapContainer();
+            if (activeFilters.geographic) {
+                zoomToRegion(activeFilters.geographic);
+            }
+        });
+    }
+
+    function repositionMapContainer() {
+        const mapContainer = document.getElementById('map-container');
+        if (!mapContainer) return;
+        if (currentLang === 'en') {
+            const panelEl    = document.querySelector('.filter-panel');
+            const panelWidth = panelEl ? panelEl.offsetWidth : 0;
+            if (panelWidth > 0) {
+                mapContainer.style.left  = panelWidth + 'px';
+                mapContainer.style.width = (window.innerWidth - panelWidth) + 'px';
+            }
+        } else {
+            mapContainer.style.left  = '';
+            mapContainer.style.width = '';
+        }
+    }
+
+    function initLang() {
+        applyLanguage();
+        // Reposition after first paint so panel offsetWidth is available
+        requestAnimationFrame(repositionMapContainer);
+        document.getElementById('lang-switcher')
+            ?.addEventListener('click', () => setLang(currentLang === 'he' ? 'en' : 'he'));
+    }
+
     // ── State ────────────────────────────────────────────────────────────────
     let allPins         = [];
     let pinSymbolsReady = false;
@@ -38,6 +252,7 @@
     // ── Boot ─────────────────────────────────────────────────────────────────
 
     document.addEventListener('DOMContentLoaded', function () {
+        initLang();
         initMap();
         loadPins();
         setupFilters();
@@ -69,6 +284,9 @@
                 svgVbWidth  = svg.viewBox.baseVal.width;
                 svgVbHeight = svg.viewBox.baseVal.height;
             }
+
+            // Ensure map-container is correctly sized after async SVG load
+            repositionMapContainer();
 
             setupMapElements();
             setupRegionInteractivity();
@@ -229,25 +447,30 @@
         const rect = zoomRects[regionName];
         if (!rect || svgVbWidth === 0) return;
 
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
+        // Use the actual map container size — in English the container is narrowed
+        // to exclude the left-side panel, so all zoom math automatically adapts.
+        const mapContainer = document.getElementById('map-container');
+        const cw = mapContainer ? mapContainer.offsetWidth  : window.innerWidth;
+        const ch = mapContainer ? mapContainer.offsetHeight : window.innerHeight;
 
-        const baseScale   = Math.max(vw / svgVbWidth, vh / svgVbHeight);
-        const baseOffsetX = (vw - svgVbWidth  * baseScale) / 2;
-        const baseOffsetY = (vh - svgVbHeight * baseScale) / 2;
-
-        const panelEl    = document.querySelector('.filter-panel');
-        const panelWidth = panelEl ? panelEl.offsetWidth : vw * 0.22;
-        const availW     = vw - panelWidth;
+        const baseScale   = Math.max(cw / svgVbWidth, ch / svgVbHeight);
+        const baseOffsetX = (cw - svgVbWidth  * baseScale) / 2;
+        const baseOffsetY = (ch - svgVbHeight * baseScale) / 2;
 
         const cx = (rect.x + rect.width  / 2) * baseScale + baseOffsetX;
         const cy = (rect.y + rect.height / 2) * baseScale + baseOffsetY;
 
+        // In Hebrew, the panel sits on the right and overlaps the full-width container;
+        // reduce the available width so zoom centres in the visible area.
+        const panelEl      = document.querySelector('.filter-panel');
+        const panelOverlap = (currentLang === 'he' && panelEl) ? panelEl.offsetWidth : 0;
+        const availW       = cw - panelOverlap;
+
         const ZOOM_PAD = 60; // extra padding keeps pins near the region edge fully visible
-        const s  = Math.min((availW - 2 * ZOOM_PAD) / (rect.width * baseScale), (vh - 2 * ZOOM_PAD) / (rect.height * baseScale));
+        const s  = Math.min((availW - 2 * ZOOM_PAD) / (rect.width * baseScale), (ch - 2 * ZOOM_PAD) / (rect.height * baseScale));
 
         const dx = availW / 2 - cx * s;
-        const dy = vh     / 2 - cy * s;
+        const dy = ch / 2 - cy * s;
 
         svg.style.transformOrigin = '0 0';
         svg.style.transition      = 'transform 600ms cubic-bezier(0.4, 0.0, 0.2, 1)';
@@ -401,7 +624,7 @@
     function hasTerm(pin, taxonomy, termName) {
         const terms = pin.taxonomies?.[taxonomy];
         if (!Array.isArray(terms)) return false;
-        return terms.some(t => (typeof t === 'object' ? t.name : t) === termName);
+        return terms.some(term => (typeof term === 'object' ? term.name : term) === termName);
     }
 
     // ── Display pins (GOOD VERSION - NO COUNTER-SCALING) ────────────────────
@@ -450,7 +673,10 @@
             inner.appendChild(use);
             g.appendChild(inner);
             g.setAttribute('data-pin-title', pin.title);
-            g.addEventListener('mouseenter', e => pinTooltipShow(e, pin.title));
+            g.addEventListener('mouseenter', e => {
+                const title = (currentLang === 'en' && pin.title_en) ? pin.title_en : pin.title;
+                pinTooltipShow(e, title);
+            });
             g.addEventListener('mousemove', e => pinTooltipMove(e));
             g.addEventListener('mouseleave', () => pinTooltipHide());
             g.addEventListener('click', e => {
@@ -596,11 +822,17 @@
         const panel = document.getElementById('project-panel');
         if (!panel) return;
 
-        panel.querySelector('.project-title-text').textContent = pin.title;
+        const isEn          = currentLang === 'en';
+        const displayTitle  = (isEn && pin.title_en)         ? pin.title_en         : pin.title;
+        const displayDesc   = (isEn && pin.content_en)       ? pin.content_en       : pin.content;
+        const displayOrg    = (isEn && pin.operating_org_en) ? pin.operating_org_en : pin.operating_org;
+        const displayLoc    = (isEn && pin.location_en)      ? pin.location_en      : pin.location;
+
+        panel.querySelector('.project-title-text').textContent = displayTitle;
 
         const descEl = panel.querySelector('.project-panel-description');
-        descEl.textContent = pin.content || '';
-        descEl.classList.toggle('hidden', !pin.content);
+        descEl.textContent = displayDesc || '';
+        descEl.classList.toggle('hidden', !displayDesc);
 
         function setMeta(id, value) {
             const row = document.getElementById(id);
@@ -611,15 +843,15 @@
         }
 
         const terms = pin.taxonomies || {};
-        setMeta('pm-location', pin.location || '');
-        setMeta('pm-audience', (terms.target_audience   || []).map(t => t.name).join(' | '));
-        setMeta('pm-domains',  (terms.domains           || []).map(t => t.name).join(' | '));
-        setMeta('pm-cycle',    (terms.activity_cycle    || []).map(t => t.name).join(', '));
+        setMeta('pm-location', displayLoc || '');
+        setMeta('pm-audience', (terms.target_audience || []).map(term => termLabel(term.name)).join(' | '));
+        setMeta('pm-domains',  (terms.domains         || []).map(term => termLabel(term.name)).join(' | '));
+        setMeta('pm-cycle',    (terms.activity_cycle  || []).map(term => termLabel(term.name)).join(', '));
 
         const orgEl = document.getElementById('pm-org');
         if (orgEl) {
-            orgEl.querySelector('.org-name').textContent = pin.operating_org || '';
-            orgEl.classList.toggle('hidden', !pin.operating_org);
+            orgEl.querySelector('.org-name').textContent = displayOrg || '';
+            orgEl.classList.toggle('hidden', !displayOrg);
         }
 
         const linkEl = document.getElementById('pm-link');
@@ -643,6 +875,16 @@
         // Fill related projects carousel (NEW FROM CURRENT)
         fillRelatedProjects(pin);
         collapseConsecutiveDividers();
+
+        // Re-apply i18n labels inside the panel so they're always in the current language,
+        // even when fillPinDetails is called outside of applyLanguage().
+        panel.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.dataset.i18n;
+            el.textContent = t(key);
+        });
+        panel.querySelectorAll('[data-i18n-aria]').forEach(el => {
+            el.setAttribute('aria-label', t(el.dataset.i18nAria));
+        });
     }
 
     function collapseConsecutiveDividers() {
@@ -762,7 +1004,7 @@
 
             const name = document.createElement('span');
             name.className   = 'related-project-name';
-            name.textContent = relPin.title;
+            name.textContent = (currentLang === 'en' && relPin.title_en) ? relPin.title_en : relPin.title;
 
             btn.appendChild(icon);
             btn.appendChild(name);
@@ -787,7 +1029,7 @@
             for (let i = 0; i < count; i++) {
                 const dot = document.createElement('button');
                 dot.className = 'carousel-dot';
-                dot.setAttribute('aria-label', `מיזם ${i + 1}`);
+                dot.setAttribute('aria-label', `${t('carouselDotLabel')} ${i + 1}`);
                 dot.addEventListener('click', () => goTo(i));
                 dotsWrap.appendChild(dot);
             }
@@ -818,18 +1060,22 @@
     function openProjectPanel(pin) {
         const panel = document.getElementById('project-panel');
         if (!panel) return;
+        currentOpenPin = pin;
         fillPinDetails(pin);
         panel.classList.remove('panel-search-mode', 'panel-pin-from-search');
         panel.classList.add('panel-open');
         panel.setAttribute('aria-hidden', 'false');
+        document.documentElement.classList.add('project-panel-open');
         setSelectedPin(pin.id);
     }
 
     function closeProjectPanel() {
         const panel = document.getElementById('project-panel');
         if (!panel) return;
+        currentOpenPin = null;
         panel.classList.remove('panel-open', 'panel-search-mode', 'panel-pin-from-search');
         panel.setAttribute('aria-hidden', 'true');
+        document.documentElement.classList.remove('project-panel-open');
         setSelectedPin(null);
     }
 
@@ -893,9 +1139,10 @@
         for (const terms of Object.values(taxonomies)) {
             if (!Array.isArray(terms)) continue;
             for (const term of terms) {
-                const name = (term.name || '').toLowerCase();
-                if (name === query)       return 60;
-                if (name.includes(query)) return 30;
+                const heName = (term.name || '').toLowerCase();
+                const enName = termLabel(term.name || '').toLowerCase();
+                if (heName === query || enName === query)             return 60;
+                if (heName.includes(query) || enName.includes(query)) return 30;
             }
         }
         return 0;
@@ -916,8 +1163,9 @@
         const panel = document.getElementById('project-panel');
         if (!panel) return;
 
+        lastSearchQuery = query;
         document.getElementById('search-results-title').textContent =
-            'תוצאות חיפוש "' + query + '" (' + results.length + ')';
+            `${t('searchResultsTitle')} "${query}" (${results.length})`;
 
         const list = document.getElementById('search-results-list');
         list.innerHTML = '';
@@ -925,24 +1173,28 @@
         if (results.length === 0) {
             const li = document.createElement('li');
             li.className = 'search-result-empty';
-            li.textContent = 'לא נמצאו תוצאות';
+            li.textContent = t('noResults');
             list.appendChild(li);
         } else {
             results.forEach(function (pin) {
                 const li = document.createElement('li');
                 li.className = 'search-result-item';
 
+                const isEn         = currentLang === 'en';
+                const displayTitle = (isEn && pin.title_en)   ? pin.title_en   : pin.title;
+                const displayBody  = (isEn && pin.content_en) ? pin.content_en : pin.content;
+
                 const titleBtn = document.createElement('button');
                 titleBtn.className = 'search-result-title';
-                titleBtn.textContent = pin.title;
+                titleBtn.textContent = displayTitle;
                 titleBtn.addEventListener('click', function () { openPinFromSearch(pin); });
 
                 const excerpt = document.createElement('p');
                 excerpt.className = 'search-result-excerpt';
-                excerpt.textContent = getExcerpt(pin.content || '', query);
+                excerpt.textContent = getExcerpt(displayBody || '', query);
 
                 li.appendChild(titleBtn);
-                if (pin.content) li.appendChild(excerpt);
+                if (displayBody) li.appendChild(excerpt);
                 list.appendChild(li);
             });
         }
@@ -950,6 +1202,7 @@
         panel.classList.remove('panel-pin-from-search');
         panel.classList.add('panel-search-mode', 'panel-open');
         panel.setAttribute('aria-hidden', 'false');
+        document.documentElement.classList.add('project-panel-open');
     }
 
     function openPinFromSearch(pin) {

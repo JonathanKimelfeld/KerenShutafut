@@ -258,7 +258,7 @@ body {
 /* ── Section icon (inline, beside header text) ── */
 .filter-section-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -268,9 +268,11 @@ body {
 
 .section-icon {
   display: block;
-  width: 22px;
-  height: auto;
+  width: 20px !important;  /* override any inline width/height attribute */
+  height: 20px !important;
   flex-shrink: 0;
+  align-self: flex-start;  /* top of icon aligns with top of title text */
+  margin-top: 1px;         /* fine-tune: pushes icon to cap-height level */
 }
 
 .filter-group-title {
@@ -291,14 +293,14 @@ body {
   grid-template-columns: repeat(3, 1fr);
   width: 100%;
   row-gap: var(--row-gap);
-  column-gap: 10px;
+  column-gap: var(--row-gap); /* match row-gap for consistent spacing */
   direction: rtl;
 }
 
 /* ── Single option label ── */
 .filter-option {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* align radio button with first line of text */
   gap: 8px;
   direction: rtl;
   cursor: pointer;
@@ -307,7 +309,6 @@ body {
   color: var(--ink);
   line-height: 1.4;
   transition: opacity 0.15s;
-  white-space: nowrap; /* never wrap option labels */
 }
 
 .filter-option:hover { opacity: 0.7; }
@@ -315,7 +316,6 @@ body {
 .option-text {
   direction: rtl;
   text-align: right;
-  white-space: nowrap;
 }
 
 /* ─────────────────────────────────────────────
@@ -1233,4 +1233,298 @@ body {
   border-radius: 8px;
   object-fit: cover;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ─────────────────────────────────────────────
+   Language switcher button
+───────────────────────────────────────────── */
+.lang-switcher {
+  position: fixed;
+  top: 16px;
+  /* Hebrew: just to the left of the right-side panel */
+  right: calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) + 12px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--panel-bg);
+  border: 2px solid var(--ink);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: box-shadow 0.15s,
+              right 0.3s ease-in-out,
+              left 0.3s ease-in-out;
+  line-height: 1;
+}
+
+.lang-switcher:hover {
+  box-shadow: 0 2px 8px rgba(43, 74, 69, 0.25);
+}
+
+.lang-switcher:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.lang-sep {
+  opacity: 0.35;
+  font-weight: 400;
+  margin: 0 1px;
+}
+
+.lang-opt {
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+
+/* Highlight the active language */
+html[data-lang="he"] .lang-opt[data-lang-opt="he"],
+html[data-lang="en"] .lang-opt[data-lang-opt="en"] {
+  opacity: 1;
+  font-weight: 700;
+}
+
+/* English: just to the right of the left-side panel */
+html[data-lang="en"] .lang-switcher {
+  right: auto;
+  left: calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) + 12px);
+}
+
+/* Project panel open: shift switcher to stay on the map area */
+html.project-panel-open .lang-switcher {
+  right: calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) * 2 + 12px);
+}
+
+html[data-lang="en"].project-panel-open .lang-switcher {
+  right: auto;
+  left: calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) * 2 + 12px);
+}
+
+/* ─────────────────────────────────────────────
+   English (LTR) layout overrides
+───────────────────────────────────────────── */
+
+/* Logo: bottom-right in English (panel is left, logo goes to the free corner) */
+html[data-lang="en"] .map-logo {
+  left: auto;
+  right: 16px;
+}
+
+/* Map: shift container right so it occupies only the non-panel area */
+html[data-lang="en"] #map-container {
+  left: clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width));
+  width: calc(100vw - clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)));
+}
+
+/* English option text: left-aligned, free to wrap */
+html[data-lang="en"] .option-text {
+  text-align: left;
+}
+
+/* Filter panel flips to the left */
+html[data-lang="en"] .filter-panel {
+  right: auto;
+  left: 0;
+  border-radius: 0 20px 20px 0;
+  border: 2px solid var(--ink);
+  border-left: none;
+  /* Tight shadow — stays within ~8px of the panel edge so it doesn't cover the map */
+  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.14);
+}
+
+html[data-lang="en"] .filter-panel-inner {
+  direction: ltr;
+  padding: var(--panel-pad-v) var(--panel-pad-h) 40px calc(var(--panel-pad-h) + 14px);
+}
+
+html[data-lang="en"] .filter-panel-title {
+  direction: ltr;
+  text-align: left;
+}
+
+html[data-lang="en"] .panel-description {
+  direction: ltr;
+  text-align: left;
+  border-right: none;
+  border-left: 2px solid var(--ink);
+  padding-right: 0;
+  padding-left: 12px;
+}
+
+html[data-lang="en"] .filter-search-row,
+html[data-lang="en"] .search-input-group {
+  direction: ltr;
+}
+
+html[data-lang="en"] .map-search-input {
+  direction: ltr;
+  text-align: left;
+}
+
+html[data-lang="en"] .filter-section-header {
+  direction: ltr;
+}
+
+html[data-lang="en"] .filter-group-title {
+  direction: ltr;
+  text-align: left;
+}
+
+html[data-lang="en"] .filter-options-grid {
+  direction: ltr;
+}
+
+html[data-lang="en"] .filter-option {
+  direction: ltr;
+}
+
+html[data-lang="en"] .option-text {
+  direction: ltr;
+  text-align: left;
+}
+
+html[data-lang="en"] .filter-clear-row {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Project panel flips to the left */
+html[data-lang="en"] .project-panel {
+  right: auto;
+  left: 0;
+  border-radius: 0 20px 20px 0;
+  border: 2px solid var(--ink);
+  border-left: none;
+  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.14);
+  transform: translateX(-100%); /* slides in from the left */
+}
+
+html[data-lang="en"] .project-panel.panel-open {
+  transform: translateX(0);
+}
+
+html[data-lang="en"] .project-panel-inner {
+  direction: ltr;
+  /* left padding clears the filter panel; right gets normal spacing */
+  padding: var(--panel-pad-v) calc(var(--panel-pad-h) + 20px) 40px
+           calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) + var(--panel-pad-h));
+}
+
+html[data-lang="en"] .project-panel-close {
+  left: auto;
+  right: 12px;
+}
+
+html[data-lang="en"] .project-panel-title {
+  direction: ltr;
+  text-align: left;
+  padding-left: 0;
+  padding-right: 36px;
+}
+
+html[data-lang="en"] .description-with-divider {
+  padding-right: 0;
+  padding-left: 16px;
+}
+
+html[data-lang="en"] .vertical-divider-right {
+  right: auto;
+  left: 0;
+}
+
+html[data-lang="en"] .project-panel-description {
+  direction: ltr;
+  text-align: left;
+}
+
+html[data-lang="en"] .project-meta-row {
+  direction: ltr;
+}
+
+html[data-lang="en"] .project-panel-org {
+  direction: ltr;
+  text-align: left;
+}
+
+html[data-lang="en"] .project-panel-org .org-label {
+  margin-left: 0;
+  margin-right: 4px;
+}
+
+html[data-lang="en"] .project-panel-link {
+  direction: ltr;
+}
+
+/* Search results panel in English */
+html[data-lang="en"] .search-results-title {
+  direction: ltr;
+  text-align: left;
+  padding-left: 0;
+  padding-right: 36px;
+}
+
+html[data-lang="en"] .search-result-item,
+html[data-lang="en"] .search-result-title,
+html[data-lang="en"] .search-result-excerpt,
+html[data-lang="en"] .search-result-empty {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Back-to-results button in English */
+html[data-lang="en"] .project-panel.panel-pin-from-search .back-to-results-btn {
+  direction: ltr;
+  flex-direction: row-reverse; /* arrow points right for LTR "back" */
+}
+
+/* Related projects carousel in English */
+html[data-lang="en"] .related-projects-section,
+html[data-lang="en"] .related-carousel,
+html[data-lang="en"] .carousel-footer {
+  direction: ltr;
+}
+
+html[data-lang="en"] .related-projects-title {
+  direction: ltr;
+  text-align: left;
+}
+
+html[data-lang="en"] .related-project-btn,
+html[data-lang="en"] .related-project-name {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Mobile: bottom-sheet panel — map fills full width, switcher falls back to fixed corner */
+@media screen and (max-width: 768px) {
+  /* Hebrew: panel is bottom sheet, so the calc() offset would be huge — reset to corner */
+  .lang-switcher {
+    right: 16px;
+  }
+
+  html[data-lang="en"] .filter-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    border-radius: 20px 20px 0 0;
+    border: 2px solid var(--ink);
+    border-bottom: none;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  html[data-lang="en"] #map-container {
+    left: 0;
+    width: 100vw;
+  }
+
+  html[data-lang="en"] .lang-switcher {
+    left: 16px;
+    right: auto;
+  }
 }
