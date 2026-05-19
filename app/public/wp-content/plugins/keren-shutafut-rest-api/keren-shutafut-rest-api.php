@@ -136,11 +136,19 @@ function keren_shutafut_get_pins() {
             'domains'           => get_taxonomy_terms_with_details( $pin->ID, 'domains' ),
         );
 
-        // Compute legacy SVG position as fallback (used when the pin has no
-        // real coordinates and coordinate-utils.js GridManager cannot place it)
-        $region_terms = wp_get_post_terms( $pin->ID, 'geographic_region', array( 'fields' => 'names' ) );
-        $region_name  = ( ! is_wp_error( $region_terms ) && ! empty( $region_terms ) ) ? $region_terms[0] : '';
-        $pos          = ksm_pin_svg_position( $pin->ID, $region_name );
+        // SVG position: prefer manually-set coordinates from the positioner tool,
+        // fall back to pseudo-random anchor position when none have been saved.
+        $manual_svg_x = get_post_meta( $pin->ID, 'svg_x', true );
+        $manual_svg_y = get_post_meta( $pin->ID, 'svg_y', true );
+        $manually_positioned = ( $manual_svg_x !== '' && $manual_svg_y !== '' );
+
+        if ( $manually_positioned ) {
+            $pos = array( 'x' => floatval( $manual_svg_x ), 'y' => floatval( $manual_svg_y ) );
+        } else {
+            $region_terms = wp_get_post_terms( $pin->ID, 'geographic_region', array( 'fields' => 'names' ) );
+            $region_name  = ( ! is_wp_error( $region_terms ) && ! empty( $region_terms ) ) ? $region_terms[0] : '';
+            $pos          = ksm_pin_svg_position( $pin->ID, $region_name );
+        }
 
         $result[] = array(
             'id'               => $pin->ID,
@@ -159,10 +167,11 @@ function keren_shutafut_get_pins() {
             'coordinates_dms' => $coordinates_dms ?: null,
             'latitude'        => $lat_float,
             'longitude'       => $lon_float,
-            // Legacy fallback: pseudo-random position near region anchor.
-            // Used by displayPins() when latitude/longitude are null.
-            'svg_x'           => $pos['x'],
-            'svg_y'           => $pos['y'],
+            // SVG position used by displayPins() when GridManager cannot place the pin,
+            // or when manually_positioned is true (GridManager is skipped entirely).
+            'svg_x'              => $pos['x'],
+            'svg_y'              => $pos['y'],
+            'manually_positioned' => $manually_positioned,
             'taxonomies'      => $taxonomies,
         );
     }

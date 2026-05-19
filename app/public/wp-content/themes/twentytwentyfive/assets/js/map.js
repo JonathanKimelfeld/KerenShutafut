@@ -779,7 +779,12 @@
      * @returns {{ x: number, y: number } | null}
      */
     function resolvePinPosition(pin) {
-        // Attempt coordinate-based placement
+        // Manually positioned pins always use their saved SVG coordinates exactly.
+        if (pin.manually_positioned && pin.svg_x != null && pin.svg_y != null) {
+            return { x: pin.svg_x, y: pin.svg_y };
+        }
+
+        // Attempt coordinate-based placement via GridManager
         if (gridManager && pin.latitude != null && pin.longitude != null) {
             const regionName = pin.taxonomies?.geographic_region?.[0]?.name;
             if (regionName) {
@@ -1091,9 +1096,12 @@
         if (e.key === 'Escape') closeProjectPanel();
     });
 
-    // Close when clicking the map background (not a pin)
+    // Close when clicking the map background (not a pin), and zoom out if zoomed in
     document.getElementById('map-container')?.addEventListener('click', function (e) {
         if (!e.target.closest('.map-pin')) closeProjectPanel();
+        if (!e.target.closest('.map-pin') && activeFilters.geographic !== null) {
+            setGeoFilter(null);
+        }
     });
 
     // ── Search ───────────────────────────────────────────────────────────────
