@@ -85,33 +85,40 @@
     };
 
     const TERM_TRANSLATIONS = {
+        // geographic_region
         'צפון':                  'North',
         'מרכז':                  'Center',
         'דרום':                  'South',
         'ירושלים':               'Jerusalem',
         'כרמל':                  'Carmel',
+        // activity_cycle
         'מחזור א':               'Cycle A',
         'מחזור ב':               'Cycle B',
         'מחזור ג':               'Cycle C',
         'מחזור ד':               'Cycle D',
         'מחזור ה':               'Cycle E',
         'מחזור ו':               'Cycle F',
-        'יהודים וערבים':         'Jews and Arabs',
-        'נוער וילדים':           'Youth and Children',
-        'קהל מגוון':             'Diverse Audience',
-        'נשים':                  'Women',
-        'צעירים וסטודנטים':      'Young Adults and Students',
-        'אנשי מקצוע ופעילים':    'Professionals and Activists',
+        // target_audience
+        'בני ובנות נוער':        'Youth',
         'דתיים וחילונים':        'Religious and Secular',
+        'הגיל הרך':              'Early Childhood',
+        'החברה החרדית':          'Haredi Community',
+        'יהודים וערבים':         'Jews and Arabs',
         'להט"ב':                 'LGBTQ+',
         'מוגבלויות':             'People with Disabilities',
+        'נשים':                  'Women',
+        'צעירים וסטודנטים':      'Young Adults and Students',
+        'צרכים מיוחדים':         'Special Needs',
+        // domains
         'אומנות ותרבות':         'Arts and Culture',
+        'השכלה גבוהה':           'Higher Education',
         'חינוך':                 'Education',
-        'טבע וסביבה':            'Nature and Environment',
+        'טבע קיימות וסביבה':     'Nature, Sustainability and Environment',
         'לימוד בין-דתי':         'Interfaith Learning',
         'מוסיקה':                'Music',
         'מנהיגות ויזמות':        'Leadership and Entrepreneurship',
         'ספורט':                 'Sports',
+        'קבוצות מנהיגות':        'Leadership Groups',
         'קהילה ורווחה':          'Community and Welfare',
         'שפה':                   'Language',
     };
@@ -1136,12 +1143,53 @@
         openSearchResults(searchResults, query);
     }
 
+    // Returns the Levenshtein edit distance between two strings.
+    function levenshtein(a, b) {
+        const m = a.length, n = b.length;
+        const dp = [];
+        for (let i = 0; i <= m; i++) { dp[i] = [i]; }
+        for (let j = 0; j <= n; j++) { dp[0][j] = j; }
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                dp[i][j] = a[i - 1] === b[j - 1]
+                    ? dp[i - 1][j - 1]
+                    : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+            }
+        }
+        return dp[m][n];
+    }
+
+    // Returns true if query appears in text with at most `maxDist` edits,
+    // checked against each word and against sliding substrings of similar length.
+    function fuzzyContains(text, query) {
+        if (!text || !query) return false;
+        if (text.includes(query)) return true;
+        const q = query.length;
+        // Allow 1 edit for queries ≥4 chars, 2 edits for queries ≥7 chars.
+        const maxDist = q < 4 ? 0 : q < 7 ? 1 : 2;
+        if (maxDist === 0) return false;
+        // Check each whitespace-separated word.
+        for (const word of text.split(/\s+/)) {
+            if (Math.abs(word.length - q) <= maxDist && levenshtein(word, query) <= maxDist) return true;
+        }
+        // Check sliding substrings (catches partial matches inside longer words).
+        for (let i = 0; i <= text.length - q + maxDist; i++) {
+            for (let len = Math.max(1, q - maxDist); len <= q + maxDist; len++) {
+                const sub = text.slice(i, i + len);
+                if (sub.length >= q - maxDist && levenshtein(sub, query) <= maxDist) return true;
+            }
+        }
+        return false;
+    }
+
     function scorePin(pin, query) {
         const title = (pin.title   || '').toLowerCase();
         const desc  = (pin.content || '').toLowerCase();
-        if (title === query)       return 100;
-        if (title.includes(query)) return 80;
-        if (desc.includes(query))  return 40;
+        if (title === query)        return 100;
+        if (title.includes(query))  return 80;
+        if (fuzzyContains(title, query)) return 60;
+        if (desc.includes(query))   return 40;
+        if (fuzzyContains(desc, query))  return 20;
 
         const taxonomies = pin.taxonomies || {};
         for (const terms of Object.values(taxonomies)) {
@@ -1151,6 +1199,7 @@
                 const enName = termLabel(term.name || '').toLowerCase();
                 if (heName === query || enName === query)             return 60;
                 if (heName.includes(query) || enName.includes(query)) return 30;
+                if (fuzzyContains(heName, query) || fuzzyContains(enName, query)) return 15;
             }
         }
         return 0;
