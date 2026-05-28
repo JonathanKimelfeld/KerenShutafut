@@ -26,11 +26,11 @@
             searchBtnAriaLabel:   'חפש',
             filterAudience:       'קהל יעד',
             filterLocation:       'מיקום',
-            filterCycle:          'מחזור',
+            filterCycle:          'מחזור קרן שותפות',
             filterDomain:         'תחום',
             filterAudienceGroup:  'בחר קהל יעד',
             filterLocationGroup:  'בחר מיקום',
-            filterCycleGroup:     'בחר מחזור פעילות',
+            filterCycleGroup:     'בחר מחזור קרן שותפות',
             filterDomainGroup:    'בחר תחום',
             filterPanelAriaLabel: 'פאנל סינון',
             clearAll:             'נקה הכל',
@@ -39,7 +39,7 @@
             backToResultsAriaLabel: 'חזרה לתוצאות החיפוש',
             metaLocation:         'מיקום:',
             metaAudience:         'קהל יעד:',
-            metaCycle:            'מחזור:',
+            metaCycle:            'מחזור קרן שותפות:',
             metaDomain:           'תחום:',
             orgLabel:             'ארגון מפעיל:',
             linkLabel:            'לינק לאתר',
@@ -58,11 +58,11 @@
             searchBtnAriaLabel:   'Search',
             filterAudience:       'Target Audience',
             filterLocation:       'Location',
-            filterCycle:          'Cycle',
+            filterCycle:          'Keren Shutafut Cycle',
             filterDomain:         'Domain',
             filterAudienceGroup:  'Select Target Audience',
             filterLocationGroup:  'Select Location',
-            filterCycleGroup:     'Select Activity Cycle',
+            filterCycleGroup:     'Select Keren Shutafut Cycle',
             filterDomainGroup:    'Select Domain',
             filterPanelAriaLabel: 'Filter panel',
             clearAll:             'Clear All',
@@ -71,7 +71,7 @@
             backToResultsAriaLabel: 'Back to search results',
             metaLocation:         'Location:',
             metaAudience:         'Target Audience:',
-            metaCycle:            'Cycle:',
+            metaCycle:            'Keren Shutafut Cycle:',
             metaDomain:           'Domain:',
             orgLabel:             'Operating Organization:',
             linkLabel:            'Website',
@@ -146,7 +146,23 @@
     function setLang(lang) {
         currentLang = lang;
         localStorage.setItem('ks-lang', lang);
+        // Freeze position transitions directly on the elements so the switcher
+        // and logo snap instantly on language change instead of sliding.
+        const freezeEls = [
+            document.querySelector('.lang-switcher'),
+            document.querySelector('.map-logo'),
+            document.querySelector('.filter-panel'),
+            document.getElementById('map-container'),
+        ].filter(Boolean);
+        freezeEls.forEach(el => { el.style.transition = 'none'; });
         applyLanguage();
+        // Double-rAF: first frame paints the snapped positions, second frame
+        // restores CSS transitions so they work normally afterwards.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                freezeEls.forEach(el => { el.style.transition = ''; });
+            });
+        });
     }
 
     function applyLanguage() {
@@ -214,7 +230,9 @@
 
     function repositionMapContainer() {
         const mapContainer = document.getElementById('map-container');
+        const svg          = document.querySelector('#map svg');
         if (!mapContainer) return;
+
         if (currentLang === 'en') {
             const panelEl    = document.querySelector('.filter-panel');
             const panelWidth = panelEl ? panelEl.offsetWidth : 0;
@@ -222,9 +240,27 @@
                 mapContainer.style.left  = panelWidth + 'px';
                 mapContainer.style.width = (window.innerWidth - panelWidth) + 'px';
             }
+            // Left-align the SVG in the narrowed container so Israel's western edge
+            // starts at the panel border instead of being clipped in the middle.
+            if (svg) svg.setAttribute('preserveAspectRatio', 'xMinYMid slice');
         } else {
             mapContainer.style.left  = '';
             mapContainer.style.width = '';
+            if (svg) svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+        }
+
+        // Kiriat Shemona label has different positions per language
+        // because the visible portion of the SVG differs between modes.
+        const ksText = svg && svg.querySelector('#kiriat-shemona-text');
+        if (ksText) {
+            const tspans = ksText.querySelectorAll('tspan');
+            if (currentLang === 'en') {
+                if (tspans[0]) { tspans[0].setAttribute('x', '150'); tspans[0].setAttribute('y', '-40'); }
+                if (tspans[1]) { tspans[1].setAttribute('x', '110'); tspans[1].setAttribute('y', '-40'); }
+            } else {
+                if (tspans[0]) { tspans[0].setAttribute('x', '50'); tspans[0].setAttribute('y', '-20'); }
+                if (tspans[1]) { tspans[1].setAttribute('x', '50'); tspans[1].setAttribute('y', '0'); }
+            }
         }
     }
 
@@ -287,6 +323,8 @@
             if (svg) {
                 svg.removeAttribute('width');
                 svg.removeAttribute('height');
+                // repositionMapContainer will set the correct value per language;
+                // default to xMidYMid for Hebrew until that runs.
                 svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
                 svgVbWidth  = svg.viewBox.baseVal.width;
                 svgVbHeight = svg.viewBox.baseVal.height;
@@ -454,26 +492,28 @@
         const rect = zoomRects[regionName];
         if (!rect || svgVbWidth === 0) return;
 
-        // Use the actual map container size — in English the container is narrowed
-        // to exclude the left-side panel, so all zoom math automatically adapts.
+        // Use the actual map container size — in English it is narrowed to exclude
+        // the left-side panel, so all zoom math automatically adapts.
         const mapContainer = document.getElementById('map-container');
         const cw = mapContainer ? mapContainer.offsetWidth  : window.innerWidth;
         const ch = mapContainer ? mapContainer.offsetHeight : window.innerHeight;
 
-        const baseScale   = Math.max(cw / svgVbWidth, ch / svgVbHeight);
-        const baseOffsetX = (cw - svgVbWidth  * baseScale) / 2;
+        const baseScale = Math.max(cw / svgVbWidth, ch / svgVbHeight);
+        // English uses xMinYMid slice (left-aligned) → offsetX = 0.
+        // Hebrew uses xMidYMid slice (centered)      → offsetX = (cw - vbW*scale) / 2.
+        const baseOffsetX = (currentLang === 'en') ? 0 : (cw - svgVbWidth * baseScale) / 2;
         const baseOffsetY = (ch - svgVbHeight * baseScale) / 2;
 
         const cx = (rect.x + rect.width  / 2) * baseScale + baseOffsetX;
         const cy = (rect.y + rect.height / 2) * baseScale + baseOffsetY;
 
-        // In Hebrew, the panel sits on the right and overlaps the full-width container;
-        // reduce the available width so zoom centres in the visible area.
+        // In Hebrew the panel overlaps the right edge of the full-width container;
+        // reduce available width so the zoom centres in the visible area.
         const panelEl      = document.querySelector('.filter-panel');
         const panelOverlap = (currentLang === 'he' && panelEl) ? panelEl.offsetWidth : 0;
         const availW       = cw - panelOverlap;
 
-        const ZOOM_PAD = 60; // extra padding keeps pins near the region edge fully visible
+        const ZOOM_PAD = 60;
         const s  = Math.min((availW - 2 * ZOOM_PAD) / (rect.width * baseScale), (ch - 2 * ZOOM_PAD) / (rect.height * baseScale));
 
         const dx = availW / 2 - cx * s;
@@ -648,10 +688,19 @@
         const filtersApplied = activePins.length < allPins.length;
         const activeIds = filtersApplied ? new Set(activePins.map(p => p.id)) : null;
 
+        // When a geographic region is zoomed in, only render pins for that region —
+        // grey pins from other regions inside the zoomed area are confusing.
+        // For all other filters (cycle, audience, domain) keep the grey-out behaviour
+        // so users can see the full map context.
+        const geoOnly = filtersApplied && activeFilters.geographic &&
+            !activeFilters.cycle && !activeFilters.audience && !activeFilters.domains;
+
         // Inactive pins first in DOM (lower SVG stack), active pins on top
-        const ordered = filtersApplied
-            ? [...allPins.filter(p => !activeIds.has(p.id)), ...activePins]
-            : allPins;
+        const ordered = geoOnly
+            ? activePins
+            : filtersApplied
+                ? [...allPins.filter(p => !activeIds.has(p.id)), ...activePins]
+                : allPins;
 
         ordered.forEach(pin => {
             const isActive = !filtersApplied || activeIds.has(pin.id);

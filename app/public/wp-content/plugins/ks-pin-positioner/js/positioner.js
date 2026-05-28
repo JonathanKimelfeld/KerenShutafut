@@ -1,6 +1,7 @@
 jQuery(document).ready(function($) {
     let selectedPin = null;
     let allPositions = {};
+    let savePending = false;
     
     // Load all existing positions
     loadAllPositions();
@@ -27,18 +28,20 @@ jQuery(document).ready(function($) {
             alert('Please select a pin first / בחר פין קודם');
             return;
         }
-        
+
+        if (savePending) return;
+
         // Get click coordinates relative to SVG
         const svg = this;
         const pt = svg.createSVGPoint();
         pt.x = e.clientX;
         pt.y = e.clientY;
-        
+
         const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
-        
+
         // Update coordinates display
         $('#ks-click-coords').text(`${Math.round(svgP.x)}, ${Math.round(svgP.y)}`);
-        
+
         // Save position
         savePinPosition(selectedPin.id, svgP.x, svgP.y);
     });
@@ -114,8 +117,9 @@ jQuery(document).ready(function($) {
     
     // Save pin position via AJAX
     function savePinPosition(pinId, x, y) {
+        savePending = true;
         $('#ks-save-status').text('Saving... / שומר...').removeClass('error');
-        
+
         $.ajax({
             url: ksPositioner.ajaxUrl,
             type: 'POST',
@@ -127,9 +131,10 @@ jQuery(document).ready(function($) {
                 y: y
             },
             success: function(response) {
+                savePending = false;
                 if (response.success) {
                     $('#ks-save-status').text('✓ Saved / נשמר').removeClass('error');
-                    
+
                     // Update pin item
                     const $pinItem = $(`.ks-pin-item[data-pin-id="${pinId}"]`);
                     $pinItem.addClass('positioned');
@@ -138,16 +143,16 @@ jQuery(document).ready(function($) {
                     $pinItem.find('.pin-coords').remove();
                     $pinItem.append(`<span class="pin-coords">${Math.round(x)}, ${Math.round(y)}</span>`);
                     $pinItem.find('.dashicons').removeClass('dashicons-location-alt').addClass('dashicons-location');
-                    
+
                     // Update selected info
                     selectedPin.x = x;
                     selectedPin.y = y;
                     updateSelectedInfo();
-                    
+
                     // Update positions and re-render markers
                     allPositions[pinId] = { x: x, y: y, title: selectedPin.title };
                     renderPinMarkers();
-                    
+
                     setTimeout(() => {
                         $('#ks-save-status').text('');
                     }, 2000);
@@ -156,6 +161,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function() {
+                savePending = false;
                 $('#ks-save-status').text('✗ Error / שגיאה').addClass('error');
             }
         });

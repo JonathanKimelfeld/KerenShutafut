@@ -77,14 +77,21 @@ class KS_Pin_Positioner {
     
     public function save_pin_position() {
         check_ajax_referer('ks_positioner_nonce', 'nonce');
-        
+
         $pin_id = intval($_POST['pin_id']);
+
+        $post = get_post($pin_id);
+        if ( ! $post || $post->post_type !== 'pin' ) {
+            wp_send_json_error( array( 'message' => 'Invalid pin ID' ) );
+            return;
+        }
+
         $x = floatval($_POST['x']);
         $y = floatval($_POST['y']);
-        
+
         update_post_meta($pin_id, 'svg_x', $x);
         update_post_meta($pin_id, 'svg_y', $y);
-        
+
         wp_send_json_success(array(
             'pin_id' => $pin_id,
             'x' => $x,

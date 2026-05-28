@@ -258,7 +258,7 @@ body {
 /* ── Section icon (inline, beside header text) ── */
 .filter-section-header {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 4px;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -271,8 +271,8 @@ body {
   width: 20px !important;  /* override any inline width/height attribute */
   height: 20px !important;
   flex-shrink: 0;
-  align-self: flex-start;  /* top of icon aligns with top of title text */
-  margin-top: 1px;         /* fine-tune: pushes icon to cap-height level */
+  align-self: flex-end;
+  margin-top: 0;
 }
 
 .filter-group-title {
@@ -1194,7 +1194,10 @@ body {
 }
 
 /* ─────────────────────────────────────────────
-   Map logo (bottom-left corner)
+   Map logo
+   Desktop: top-right below the lang-switcher,
+            aligned with it above the panel edge.
+   Mobile:  bottom-left corner (unchanged).
 ───────────────────────────────────────────── */
 .map-logo {
   position: fixed;
@@ -1207,6 +1210,38 @@ body {
   display: block;
   max-width: 120px;
   height: auto;
+}
+
+/* Desktop: stacked below the lang-switcher, same right edge + same width */
+@media screen and (min-width: 769px) {
+  .map-logo {
+    bottom: auto;
+    left: auto;
+    top: 52px;
+    right: calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) + 18px);
+    transition: right 0.3s ease-in-out, left 0.3s ease-in-out;
+  }
+
+  .map-logo img {
+    width: 61px;
+    max-width: none;
+    height: auto;
+  }
+
+  html[data-lang="en"] .map-logo {
+    right: auto;
+    left: calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) + 18px);
+  }
+
+  /* Project panel open: shift logo with the lang-switcher */
+  html.project-panel-open .map-logo {
+    right: calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) * 2 + 18px);
+  }
+
+  html[data-lang="en"].project-panel-open .map-logo {
+    right: auto;
+    left: calc(clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)) * 2 + 18px);
+  }
 }
 
 @media screen and (max-width: 768px) {
@@ -1263,6 +1298,7 @@ body {
   line-height: 1;
 }
 
+
 .lang-switcher:hover {
   box-shadow: 0 2px 8px rgba(43, 74, 69, 0.25);
 }
@@ -1310,13 +1346,9 @@ html[data-lang="en"].project-panel-open .lang-switcher {
    English (LTR) layout overrides
 ───────────────────────────────────────────── */
 
-/* Logo: bottom-right in English (panel is left, logo goes to the free corner) */
-html[data-lang="en"] .map-logo {
-  left: auto;
-  right: 16px;
-}
+/* English logo position handled in the desktop media query above */
 
-/* Map: shift container right so it occupies only the non-panel area */
+/* Map: shift container right so it starts after the left panel */
 html[data-lang="en"] #map-container {
   left: clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width));
   width: calc(100vw - clamp(var(--panel-min-width), var(--panel-width), var(--panel-max-width)));
@@ -1369,6 +1401,12 @@ html[data-lang="en"] .map-search-input {
 
 html[data-lang="en"] .filter-section-header {
   direction: ltr;
+  align-items: flex-end;
+}
+
+html[data-lang="en"] .section-icon {
+  align-self: flex-end;
+  margin-top: 0;
 }
 
 html[data-lang="en"] .filter-group-title {
@@ -1519,13 +1557,14 @@ html[data-lang="en"] .related-project-name {
     box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
   }
 
-  html[data-lang="en"] #map-container {
-    left: 0;
-    width: 100vw;
-  }
-
   html[data-lang="en"] .lang-switcher {
     left: 16px;
     right: auto;
+  }
+
+  /* Mobile: panel is a bottom sheet — map fills full width regardless of language */
+  html[data-lang="en"] #map-container {
+    left: 0;
+    width: 100vw;
   }
 }

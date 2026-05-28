@@ -109,7 +109,7 @@
     <text class="cls-9" transform="translate(373.35 643.08)"><tspan x="0" y="0">תל אביב</tspan></text>
     <text class="cls-9" transform="translate(600.79 701.83)"><tspan x="0" y="0">לוד</tspan></text>
     <text class="cls-9" transform="translate(775.26 817.28)"><tspan x="0" y="0">באר שבע</tspan></text>
-    <text class="cls-9" transform="translate(66.85 62.12)"><tspan x="0" y="0">קריית</tspan><tspan x="-8.14" y="20.4">שמונה</tspan></text>
+    <text class="cls-9" transform="translate(66.85 62.12)" id="kiriat-shemona-text"><tspan x="50" y="-20">קריית</tspan><tspan x="50" y="0">שמונה</tspan></text>
     <text class="cls-9" transform="translate(868 572.76)"><tspan x="0" y="0">ירושלים</tspan></text>
     <text class="cls-9" transform="translate(69.13 434.15)"><tspan x="0" y="0">חיפה</tspan></text>
     <ellipse class="cls-10" cx="896.2" cy="808.18" rx="16.7" ry="10.48"/>
