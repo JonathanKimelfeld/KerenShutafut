@@ -165,12 +165,41 @@ if ( ! function_exists( 'twentytwentyfive_format_binding' ) ) :
 	}
 endif;
 
+// ── Viewport meta tag (required for mobile CSS media queries to fire) ────────
+add_action( 'wp_head', function () {
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">' . "\n";
+}, 1 );
+
+// ── Security hardening ───────────────────────────────────────────────────────
+
+// Remove WordPress version from <meta name="generator"> and RSS feeds
+remove_action( 'wp_head', 'wp_generator' );
+
+// Block REST API user enumeration (/wp/v2/users)
+add_filter( 'rest_endpoints', function ( $endpoints ) {
+    unset( $endpoints['/wp/v2/users'] );
+    unset( $endpoints['/wp/v2/users/(?P<id>[\d]+)'] );
+    return $endpoints;
+} );
+
+// HTTP security headers
+add_action( 'send_headers', function () {
+    if ( headers_sent() ) return;
+    header( 'X-Frame-Options: SAMEORIGIN' );
+    header( 'X-Content-Type-Options: nosniff' );
+    header( 'Referrer-Policy: strict-origin-when-cross-origin' );
+    header( 'Permissions-Policy: camera=(), microphone=(), geolocation=()' );
+    header( "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'" );
+} );
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Enqueue Keren Shutafut Map Assets
  */
 function keren_shutafut_enqueue_map_assets() {
     // Only on map page template
-    if (is_page_template('templates/template-map.php')) {
+    if (is_page_template('template-map.php')) {
         wp_enqueue_style(
             'keren-map-styles',
             get_template_directory_uri() . '/assets/css/map.css',
@@ -194,6 +223,8 @@ function keren_shutafut_enqueue_map_assets() {
             filemtime(get_template_directory() . '/assets/js/map.js'),
             true
         );
+
+
     }
 }
 add_action('wp_enqueue_scripts', 'keren_shutafut_enqueue_map_assets');
@@ -202,7 +233,7 @@ add_action('wp_enqueue_scripts', 'keren_shutafut_enqueue_map_assets');
  * Clean up browser tab title on the map page
  */
 function keren_shutafut_map_document_title( $title_parts ) {
-    if ( is_page_template( 'templates/template-map.php' ) ) {
+    if ( is_page_template( 'template-map.php' ) ) {
         return [ 'title' => 'מפת שותפות' ];
     }
     return $title_parts;
@@ -213,7 +244,7 @@ add_filter( 'document_title_parts', 'keren_shutafut_map_document_title' );
  * Hide the admin bar on the map page
  */
 add_filter( 'show_admin_bar', function( $show ) {
-    if ( is_page_template( 'templates/template-map.php' ) ) {
+    if ( is_page_template( 'template-map.php' ) ) {
         return false;
     }
     return $show;

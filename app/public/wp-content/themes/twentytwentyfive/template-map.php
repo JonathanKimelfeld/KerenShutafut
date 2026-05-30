@@ -6,30 +6,54 @@
 
 get_header();
 
-wp_enqueue_script('keren-coordinate-utils', get_template_directory_uri() . '/assets/js/coordinate-utils.js', [], '1.0', true);
-wp_enqueue_script('keren-map-script', get_template_directory_uri() . '/assets/js/map.js', ['keren-coordinate-utils'], '2.0', true);
-wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css/map.css', [], '2.0');
+wp_enqueue_script('keren-coordinate-utils', get_template_directory_uri() . '/assets/js/coordinate-utils.js', [], filemtime(get_template_directory() . '/assets/js/coordinate-utils.js'), true);
+wp_enqueue_script('keren-map-script', get_template_directory_uri() . '/assets/js/map.js', ['keren-coordinate-utils'], filemtime(get_template_directory() . '/assets/js/map.js'), true);
+wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css/map.css', [], filemtime(get_template_directory() . '/assets/css/map.css'));
 ?>
 
 <div class="map-page" dir="rtl">
+
+    <!-- Mobile top bar: toggle + lang switcher.
+         Toggle is hidden on desktop via inline style; lang-switcher stays
+         position:fixed on desktop so it escapes this wrapper visually. -->
+    <div id="mobile-top-bar">
+        <button id="ks-hamburger-btn" class="ks-hamburger-btn" aria-label="פתח סינון" data-i18n-aria="fabAriaLabel">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="20">
+                <line x1="3" y1="6"  x2="21" y2="6"  stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="6" y1="12" x2="18" y2="12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="9" y1="18" x2="15" y2="18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+            <span class="ks-hamburger-label" data-i18n="fabLabel">סינון</span>
+        </button>
+        <button id="lang-switcher" class="lang-switcher" aria-label="שפה / Language">
+            <span class="lang-opt" data-lang-opt="he">עב</span>
+            <span class="lang-sep">|</span>
+            <span class="lang-opt" data-lang-opt="en">EN</span>
+        </button>
+    </div>
 
     <!-- Full-screen map (underlies the panel) -->
     <div id="map-container" aria-hidden="true">
         <div id="map"></div>
         <div id="map-tooltip"></div>
+
+        <!-- Mobile FAB: open filter panel -->
+        <button class="ks-filter-fab" id="ks-filter-fab" aria-label="פתח סינון" data-i18n-aria="fabAriaLabel">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="22" height="22">
+                <line x1="3" y1="6"  x2="21" y2="6"  stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="6" y1="12" x2="18" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="9" y1="18" x2="15" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="ks-fab-label" data-i18n="fabLabel">סינון</span>
+            <span class="ks-fab-badge" id="ks-fab-badge" hidden>0</span>
+        </button>
     </div>
 
-    <!-- Language switcher -->
-    <button id="lang-switcher" class="lang-switcher" aria-label="שפה / Language">
-        <span class="lang-opt" data-lang-opt="he">עב</span>
-        <span class="lang-sep">|</span>
-        <span class="lang-opt" data-lang-opt="en">EN</span>
-    </button>
-
     <!-- Filter panel — fixed right overlay -->
-    <aside class="filter-panel" dir="rtl" role="complementary"
+    <aside class="filter-panel" id="ks-filter-panel" dir="rtl" role="complementary"
            aria-label="פאנל סינון" data-i18n-aria="filterPanelAriaLabel">
         <div class="filter-panel-inner">
+            <button class="ks-filter-close" aria-label="סגור סינון">✕</button>
 
             <div class="filter-panel-top">
                 <h1 class="filter-panel-title" data-i18n="panelTitle">מפת שׁוּתָּפוּת</h1>
@@ -187,6 +211,17 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
                 </button>
             </div>
 
+            <!-- Mobile sticky footer -->
+            <div class="ks-filter-footer">
+                <button class="ks-filter-apply" data-i18n="showResults">הצג תוצאות</button>
+                <button class="ks-filter-clear-mobile">
+                    <svg class="clear-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path fill="currentColor" d="M199.2,33.79c-90.2,0-158.45,76.18-158.45,166.39s68.25,158.87,158.45,158.87,168.03-68.67,168.03-158.87S289.4,33.79,199.2,33.79ZM199.2,107.29c14.35,0,27.46,3.89,38.87,10.5-6.73,14.94-19.49,32.8-43.66,43.92-36.33,16.71-59.39,67.69-68.34,91.11-12.45-14.3-20.18-32.38-20.18-52.65,0-48.84,44.47-92.89,93.31-92.89ZM199.2,285.55c-9.2,0-18.24-1.3-26.86-3.73,9.17-20.3,24.91-42.52,51.78-53.01,25.27-9.87,43.69-30.01,56.51-49.75,1.45,6.86,2.29,13.92,2.29,21.12,0,48.84-34.89,85.37-83.73,85.37Z"/>
+                    </svg>
+                    <span data-i18n="clearAll">נקה הכל</span>
+                </button>
+            </div>
+
         </div>
     </aside>
 
@@ -299,6 +334,15 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
 
         </div>
     </div>
+
+    <!-- Mobile bottom sheet — pin detail -->
+    <div class="ks-bottom-sheet" id="ks-bottom-sheet" role="dialog" aria-modal="true" aria-hidden="true" dir="rtl">
+        <div class="ks-bottom-sheet-handle" aria-hidden="true"></div>
+        <div class="ks-bottom-sheet-inner" id="ks-bottom-sheet-inner"></div>
+    </div>
+
+    <!-- Overlay for filter panel and bottom sheet on mobile -->
+    <div class="ks-overlay" id="ks-overlay" aria-hidden="true"></div>
 
 </div>
 

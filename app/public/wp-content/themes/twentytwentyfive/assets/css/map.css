@@ -84,6 +84,18 @@ input[type="radio"]:checked {
 /* ─────────────────────────────────────────────
    Base
 ───────────────────────────────────────────── */
+/* Hide the default WordPress site header on the map page */
+#header { display: none !important; }
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  direction: ltr;    /* Safari uses <html dir="rtl"> to flip the viewport origin */
+  overflow: hidden;  /* prevent html-level horizontal scroll that causes single-tab clipping in Safari */
+}
+
 body {
   overflow: hidden;
   margin: 0;
@@ -112,6 +124,7 @@ body {
   overflow: hidden;
   z-index: 1;
   background: #fff4e3;
+  direction: ltr;
 }
 
 #map {
@@ -127,6 +140,7 @@ body {
   transform-origin: 0 0;
   --pin-scale: 1;
   overflow: visible; /* pins near SVG edge are not clipped by viewBox; #map-container clips the viewport */
+  direction: ltr;
 }
 
 
@@ -1566,5 +1580,653 @@ html[data-lang="en"] .related-project-name {
   html[data-lang="en"] #map-container {
     left: 0;
     width: 100vw;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   Mobile-only elements — hidden on desktop
+───────────────────────────────────────────── */
+.ks-filter-fab,
+.ks-filter-close,
+.ks-filter-footer,
+.ks-bottom-sheet,
+.ks-overlay {
+  display: none;
+}
+
+/* ─────────────────────────────────────────────
+   Mobile layout (≤ 768px)
+───────────────────────────────────────────── */
+@media screen and (max-width: 768px) {
+
+  /* Filter panel: starts off-screen, slides up with .is-open */
+  #ks-filter-panel {
+    width: 100vw !important;
+    max-width: none !important;
+    min-width: unset !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    height: auto;
+    max-height: 85svh;
+    border-radius: 20px 20px 0 0;
+    border: 2px solid var(--ink);
+    border-bottom: none;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    z-index: 300;
+    overflow-y: auto;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  }
+
+  #ks-filter-panel.is-open {
+    transform: translateY(0);
+  }
+
+  /* Close button — top-center drag-handle style */
+  .ks-filter-close {
+    display: block;
+    position: relative;
+    width: 40px;
+    height: 5px;
+    background: rgba(43, 74, 69, 0.25);
+    border: none;
+    border-radius: 3px;
+    margin: 0 auto 16px;
+    cursor: pointer;
+    font-size: 0;
+    color: transparent;
+    padding: 0;
+  }
+
+  /* Sticky footer inside filter panel */
+  .ks-filter-footer {
+    display: flex;
+    gap: 10px;
+    position: sticky;
+    bottom: 0;
+    background: var(--panel-bg);
+    padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    border-top: 1px solid rgba(43, 74, 69, 0.15);
+    direction: rtl;
+  }
+
+  .ks-filter-apply {
+    flex: 1;
+    background: var(--color-dark-teal);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--font-main);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .ks-filter-clear-mobile {
+    flex: 0 0 auto;
+    background: transparent;
+    color: var(--color-dark-teal);
+    border: 2px solid var(--color-dark-teal);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--font-main);
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  /* FAB filter button — fixed bottom-right */
+  .ks-filter-fab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    right: 20px;
+    background: var(--color-dark-teal);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 18px;
+    font-family: var(--font-main);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    z-index: 200;
+    direction: rtl;
+  }
+
+  .ks-fab-label {
+    line-height: 1;
+  }
+
+  .ks-fab-badge {
+    background: var(--color-rust);
+    color: #fff;
+    border-radius: 50%;
+    min-width: 20px;
+    height: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0 4px;
+  }
+
+  /* Dim overlay — behind both sheets */
+  .ks-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 250;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .ks-overlay.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Bottom sheet — pin details */
+  .ks-bottom-sheet {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--panel-bg);
+    border-radius: 20px 20px 0 0;
+    border: 2px solid var(--ink);
+    border-bottom: none;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+    max-height: 75svh;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    z-index: 300;
+    overflow: hidden;
+  }
+
+  .ks-bottom-sheet.is-open {
+    transform: translateY(0);
+  }
+
+  .ks-bottom-sheet-handle {
+    flex-shrink: 0;
+    width: 40px;
+    height: 5px;
+    background: rgba(43, 74, 69, 0.25);
+    border-radius: 3px;
+    margin: 12px auto 8px;
+  }
+
+  .ks-bottom-sheet-inner {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+    direction: rtl;
+    font-family: var(--font-main);
+  }
+
+  .ks-bs-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-dark-teal);
+    margin: 0 0 10px;
+    line-height: 1.35;
+  }
+
+  .ks-bs-desc {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.55;
+    margin: 0 0 12px;
+  }
+
+  .ks-bs-meta-row {
+    font-size: 13px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .ks-bs-org {
+    font-size: 13px;
+    color: var(--ink);
+    margin: 10px 0 8px;
+  }
+
+  .ks-bs-org-label {
+    font-weight: 600;
+  }
+
+  .ks-bs-link {
+    display: inline-block;
+    margin-top: 10px;
+    color: var(--color-dark-teal);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  /* Hide desktop project panel on mobile — bottom sheet takes over */
+  #project-panel {
+    display: none !important;
+  }
+
+  /* Landscape adjustments */
+  @media (orientation: landscape) {
+    .ks-filter-fab {
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+      right: calc(env(safe-area-inset-right, 0px) + 16px);
+    }
+
+    #ks-filter-panel,
+    .ks-bottom-sheet {
+      max-height: 90svh;
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────
+   Print — show map only, hide UI panels
+───────────────────────────────────────────── */
+@media print {
+  .filter-panel,
+  .project-panel,
+  .lang-switcher,
+  .map-logo,
+  #map-tooltip,
+  .ks-filter-fab,
+  .ks-bottom-sheet,
+  .ks-overlay {
+    display: none !important;
+  }
+
+  #map-container {
+    position: static;
+    width: 100%;
+    height: 100vh;
+    overflow: visible;
+  }
+}
+
+/* Hamburger button: hidden on desktop */
+.ks-hamburger-btn { display: none; }
+
+/* ============================================================
+   MOBILE LAYOUT — max-width 768px
+   Direct overrides on .map-page / #map-container / .filter-panel
+   These come last in the file so they win over all prior rules.
+   ============================================================ */
+@media (max-width: 768px) {
+
+  /* 1. Outer wrapper: vertical stack */
+  .map-page {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100svh !important;
+    width: 100vw !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
+  /* 2. Map: fills all space below the top bar */
+  #map-container {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+    z-index: 1 !important;
+  }
+
+  /* SVG fills the map area */
+  #map, #map svg {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* English: map is always full-width on mobile */
+  html[data-lang="en"] #map-container {
+    left: auto !important;
+    width: 100% !important;
+  }
+
+  /* 3. Panel: fixed bottom drawer, hidden until .is-open */
+  .filter-panel,
+  #ks-filter-panel {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: 80svh !important;
+    flex: none !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    border-top: 2px solid var(--ink) !important;
+    border-right: none !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18) !important;
+    transform: translateY(100%) !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    z-index: 200 !important;
+    box-sizing: border-box !important;
+  }
+
+  .filter-panel.is-open,
+  #ks-filter-panel.is-open {
+    transform: translateY(0) !important;
+  }
+
+  .filter-panel-inner {
+    padding-top: 12px !important;
+  }
+
+  /* Hide the verbose intro text to save space */
+  .panel-description {
+    display: none !important;
+  }
+
+  /* 4. Touch-friendly targets: accordion headers */
+  .collapsible-header {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  /* Touch-friendly targets: each filter option label */
+  .filter-option {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  /* 5. Hide desktop-only chrome */
+  .map-logo        { display: none !important; }
+  #map-tooltip     { display: none !important; }
+  .ks-filter-fab   { display: none !important; }
+  .ks-filter-close { display: none !important; }
+  #project-panel   { display: none !important; }
+  .ks-bottom-sheet { display: none !important; }
+  .ks-overlay      { display: none !important; }
+
+  /* Overlay: shown when drawer is open */
+  .ks-overlay.is-active {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.38) !important;
+    z-index: 199 !important;
+  }
+
+  /* Hamburger button: icon + label side by side */
+  .ks-hamburger-btn {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink);
+    padding: 0 4px;
+    flex-shrink: 0;
+    font-family: var(--font-main, 'Open Sans Hebrew', Arial, sans-serif);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* Mobile top bar: hamburger on one side, lang switcher on the other */
+  #mobile-top-bar {
+    display: flex !important;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px 4px 12px;
+    background: var(--panel-bg, #fff4e3);
+    border-bottom: 2px solid var(--ink);
+    box-sizing: border-box;
+  }
+
+  html[data-lang="en"] #mobile-top-bar {
+    direction: ltr;
+    padding: 4px 12px 4px 8px;
+  }
+
+  /* Lang switcher: inline in the top bar, not a fixed overlay */
+  .lang-switcher {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    flex-shrink: 0;
+    min-height: 44px !important;
+    transition: none !important;
+    z-index: auto !important;
+  }
+
+  /* Fix 6: Touch targets under 44 px */
+  .map-search-btn  { width: 44px !important; height: 44px !important; }
+  .clear-all-btn   { min-height: 44px !important; }
+
+  /* Hide the desktop icon-based clear button; the footer one takes its place */
+  .filter-clear-row { display: none !important; }
+
+  /* ── Issue 1: Filter footer — remove sticky, scroll with content ── */
+  .ks-filter-footer {
+    position: static !important;
+    bottom: auto !important;
+    box-shadow: none !important;
+    padding: 12px 16px 16px !important;
+  }
+
+  /* Start hidden; JS shows it when filters are active */
+  .ks-filter-clear-mobile {
+    display: none !important;
+  }
+
+  .ks-filter-clear-mobile.is-visible {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ks-filter-clear-mobile .clear-icon {
+    width: 18px !important;
+    height: 18px !important;
+    flex-shrink: 0;
+  }
+
+  /* ── Issue 2: Align section icons vertically with the header text ── */
+  .filter-section-header,
+  html[data-lang="en"] .filter-section-header {
+    align-items: center !important;
+  }
+
+  /* align-self on the child overrides the container — must be explicit */
+  .section-icon,
+  html[data-lang="en"] .section-icon {
+    align-self: center !important;
+  }
+
+  /* ── Back button: pinned to the far corner (end of inline axis) ── */
+  /* RTL: inline-end = physical left   LTR: inline-end = physical right */
+  .ks-pin-back {
+    display: block !important;
+    width: -webkit-fit-content !important;
+    width: fit-content !important;
+    margin-inline-start: auto !important;
+    padding-bottom: 12px !important;
+  }
+
+  /* ── Issue 3: Unified search bar ── */
+  .search-input-group {
+    border: 1.5px solid var(--ink, #2b4a45) !important;
+    border-radius: 50px !important;
+    overflow: hidden !important;
+    display: flex !important;
+  }
+
+  .map-search-input {
+    border: none !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .map-search-btn {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* ── Issue 4: Mobile pin detail panel ── */
+  .ks-pin-detail {
+    padding: 12px 16px 16px;
+    direction: rtl;
+    font-family: var(--font-main, 'Open Sans Hebrew', Arial, sans-serif);
+  }
+
+  html[data-lang="en"] .ks-pin-detail {
+    direction: ltr;
+  }
+
+  .ks-pin-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: var(--ink, #2b4a45);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 0 12px;
+    font-family: inherit;
+  }
+
+  .ks-pin-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink, #2b4a45);
+    margin: 0 0 8px;
+    line-height: 1.3;
+  }
+
+  .ks-pin-meta {
+    font-size: 13px;
+    color: var(--ink, #2b4a45);
+    opacity: 0.75;
+    margin: 0 0 12px;
+  }
+
+  .ks-pin-description {
+    font-size: 14px;
+    color: var(--ink, #2b4a45);
+    line-height: 1.6;
+    margin: 0 0 16px;
+  }
+
+  .ks-pin-link {
+    display: inline-block;
+    padding: 8px 20px;
+    background: var(--ink, #2b4a45);
+    color: var(--panel-bg, #fff4e3);
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    font-family: inherit;
+  }
+
+  /* ── Mobile search results list ── */
+  .ks-search-results {
+    padding: 12px 0 16px;
+    font-family: var(--font-main, 'Open Sans Hebrew', Arial, sans-serif);
+    direction: rtl;
+  }
+
+  html[data-lang="en"] .ks-search-results {
+    direction: ltr;
+  }
+
+  .ks-search-results-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink, #2b4a45);
+    opacity: 0.7;
+    margin: 0 16px 8px;
+  }
+
+  .ks-search-results-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .ks-search-result-item {
+    border-bottom: 1px solid rgba(43, 74, 69, 0.15);
+    padding: 0;
+  }
+
+  .ks-search-result-item:last-child {
+    border-bottom: none;
+  }
+
+  .ks-search-result-title {
+    display: block;
+    width: 100%;
+    text-align: inherit;
+    background: none;
+    border: none;
+    padding: 10px 16px 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink, #2b4a45);
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1.3;
+  }
+
+  .ks-search-result-excerpt {
+    font-size: 12px;
+    color: var(--ink, #2b4a45);
+    opacity: 0.65;
+    margin: 0;
+    padding: 0 16px 10px;
+    line-height: 1.5;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .ks-search-empty {
+    font-size: 14px;
+    color: var(--ink, #2b4a45);
+    opacity: 0.6;
+    padding: 8px 16px;
+    margin: 0;
   }
 }

@@ -35,6 +35,8 @@
       .cls-9 {
         font-family: OpenSansHebrew-Regular, 'Open Sans Hebrew';
         font-size: 17px;
+        direction: rtl;
+        unicode-bidi: bidi-override;
       }
 
       .cls-9, .cls-10 {

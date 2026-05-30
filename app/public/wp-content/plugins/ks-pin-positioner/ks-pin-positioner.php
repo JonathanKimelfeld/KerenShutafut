@@ -77,6 +77,10 @@ class KS_Pin_Positioner {
     
     public function save_pin_position() {
         check_ajax_referer('ks_positioner_nonce', 'nonce');
+        if ( ! current_user_can( 'edit_posts' ) ) {
+            wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+            return;
+        }
 
         $pin_id = intval($_POST['pin_id']);
 
@@ -101,7 +105,11 @@ class KS_Pin_Positioner {
     
     public function get_all_positions() {
         check_ajax_referer('ks_positioner_nonce', 'nonce');
-        
+        if ( ! current_user_can( 'edit_posts' ) ) {
+            wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+            return;
+        }
+
         $pins = get_posts(array(
             'post_type' => 'pin',
             'posts_per_page' => -1,
@@ -127,7 +135,11 @@ class KS_Pin_Positioner {
     
     public function clear_pin_position() {
         check_ajax_referer('ks_positioner_nonce', 'nonce');
-        
+        if ( ! current_user_can( 'edit_posts' ) ) {
+            wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+            return;
+        }
+
         $pin_id = intval($_POST['pin_id']);
         
         delete_post_meta($pin_id, 'svg_x');

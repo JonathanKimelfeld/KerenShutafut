@@ -49,6 +49,9 @@
             carouselDotLabel:     'מיזם',
             searchResultsTitle:   'תוצאות חיפוש',
             noResults:            'לא נמצאו תוצאות',
+            fabLabel:             'סינון',
+            fabAriaLabel:         'פתח סינון',
+            showResults:          'הצג תוצאות',
         },
         en: {
             panelTitle:           'Partnership Map',
@@ -81,6 +84,9 @@
             carouselDotLabel:     'Project',
             searchResultsTitle:   'Search results',
             noResults:            'No results found',
+            fabLabel:             'Filter',
+            fabAriaLabel:         'Open filters',
+            showResults:          'Show results',
         },
     };
 
@@ -172,6 +178,13 @@
         html.setAttribute('lang',      currentLang);
         html.setAttribute('dir',       isHe ? 'rtl' : 'ltr');
 
+        // The filter panel and project panel have inline dir="rtl" which
+        // overrides the html-level dir — update them explicitly on lang change.
+        const panelDir = isHe ? 'rtl' : 'ltr';
+        document.querySelector('.filter-panel')?.setAttribute('dir', panelDir);
+        document.getElementById('project-panel')?.setAttribute('dir', panelDir);
+        document.getElementById('ks-bottom-sheet')?.setAttribute('dir', panelDir);
+
         // Static text
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.dataset.i18n;
@@ -233,7 +246,12 @@
         const svg          = document.querySelector('#map svg');
         if (!mapContainer) return;
 
-        if (currentLang === 'en') {
+        if (isMobile()) {
+            // Split layout: map is always full-width regardless of language
+            mapContainer.style.left  = '';
+            mapContainer.style.width = '';
+            if (svg) svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+        } else if (currentLang === 'en') {
             const panelEl    = document.querySelector('.filter-panel');
             const panelWidth = panelEl ? panelEl.offsetWidth : 0;
             if (panelWidth > 0) {
@@ -295,11 +313,18 @@
     // ── Boot ─────────────────────────────────────────────────────────────────
 
     document.addEventListener('DOMContentLoaded', function () {
+        // Safari initialises scrollLeft to a non-zero value on RTL pages;
+        // reset before any layout runs so the map is never clipped.
+        document.documentElement.scrollLeft = 0;
+        document.body.scrollLeft = 0;
+
         initLang();
         initMap();
         loadPins();
         setupFilters();
         setupSearch();
+        setupMobile();
+        setupMobileAccordion();
     });
 
     // ── Map init ─────────────────────────────────────────────────────────────
@@ -321,6 +346,9 @@
 
             const svg = mapContainer.querySelector('svg');
             if (svg) {
+                fixHebrewLabels(svg);
+                svg.style.direction = 'ltr';
+                svg.style.touchAction = 'none';
                 svg.removeAttribute('width');
                 svg.removeAttribute('height');
                 // repositionMapContainer will set the correct value per language;
@@ -336,6 +364,7 @@
             setupMapElements();
             setupRegionInteractivity();
             cacheZoomRects();
+            if (svg) setupTouchPan(svg);
 
             // Initialise the grid manager now that region elements are in the DOM
             if (window.KSM?.GridManager) {
@@ -352,6 +381,61 @@
         } catch (error) {
             console.error('Error loading SVG:', error);
         }
+    }
+
+    // ── Hebrew label fix (Safari SVG BiDi bug) ──────────────────────────────
+    // Safari doesn't apply the Unicode BiDi algorithm to SVG <text>, so Hebrew
+    // characters render LTR (mirrored). Replacing each <text> with a
+    // <foreignObject> containing an HTML element gives correct RTL rendering.
+
+    function fixHebrewLabels(svg) {
+        const FONT_SIZE  = 17;
+        const LABEL_W    = 160;
+
+        svg.querySelectorAll('text.cls-9').forEach(textEl => {
+            const transform = textEl.getAttribute('transform') || '';
+            const m = transform.match(/translate\(\s*([\d.+-]+)[,\s]+([\d.+-]+)\s*\)/);
+            if (!m) return;
+
+            const tx     = parseFloat(m[1]);
+            const ty     = parseFloat(m[2]);
+            const tspans = Array.from(textEl.querySelectorAll('tspan'));
+            if (!tspans.length) return;
+
+            const ys      = tspans.map(ts => parseFloat(ts.getAttribute('y') || '0'));
+            const xs      = tspans.map(ts => parseFloat(ts.getAttribute('x') || '0'));
+            const anchorX = tx + xs[0];
+            const minY    = Math.min(...ys);
+            const maxY    = Math.max(...ys);
+
+            const labelText = tspans.map(ts => ts.textContent).join('');
+            const offsets = {
+                'kiriat-shemona-text': { dx: -40, dy: 20 },
+                'חיפה':                { dx:  25, dy:  0 },
+            };
+            const adj = offsets[textEl.id] || offsets[labelText] || { dx: 0, dy: 0 };
+
+            const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+            fo.setAttribute('x', anchorX - LABEL_W / 2 + adj.dx);
+            fo.setAttribute('y', ty + minY - FONT_SIZE - 2 + adj.dy);
+            fo.setAttribute('width', LABEL_W);
+            fo.setAttribute('height', maxY - minY + FONT_SIZE + 8);
+            if (textEl.id) fo.id = textEl.id;
+
+            const div = document.createElement('div');
+            div.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+            div.style.cssText = 'direction:rtl;text-align:center;font-family:"Open Sans Hebrew",sans-serif;font-size:17px;color:#2b4a45;margin:0;padding:0;line-height:1.2;pointer-events:none;';
+
+            tspans.forEach(ts => {
+                const p = document.createElement('p');
+                p.style.cssText = 'margin:0;padding:0;';
+                p.textContent   = ts.textContent;
+                div.appendChild(p);
+            });
+
+            fo.appendChild(div);
+            textEl.parentNode.replaceChild(fo, textEl);
+        });
     }
 
     // ── Pin symbol injection ─────────────────────────────────────────────────
@@ -482,6 +566,14 @@
         const svg = document.querySelector('#map svg');
         if (!svg) return;
 
+        // Reset any touch-pan offset so CSS-transform zoom is applied to the full viewBox
+        if (svgVbWidth > 0) {
+            svg.viewBox.baseVal.x      = 0;
+            svg.viewBox.baseVal.y      = 0;
+            svg.viewBox.baseVal.width  = svgVbWidth;
+            svg.viewBox.baseVal.height = svgVbHeight;
+        }
+
         if (!regionName) {
             svg.style.transition = 'transform 600ms cubic-bezier(0.4, 0.0, 0.2, 1)';
             svg.style.transform  = 'translate(0px, 0px) scale(1)';
@@ -510,7 +602,9 @@
         // In Hebrew the panel overlaps the right edge of the full-width container;
         // reduce available width so the zoom centres in the visible area.
         const panelEl      = document.querySelector('.filter-panel');
-        const panelOverlap = (currentLang === 'he' && panelEl) ? panelEl.offsetWidth : 0;
+        // On mobile the panel is a fixed off-screen drawer — offsetWidth equals the full
+        // viewport width even when hidden, which would make availW zero or negative.
+        const panelOverlap = (!isMobile() && currentLang === 'he' && panelEl) ? panelEl.offsetWidth : 0;
         const availW       = cw - panelOverlap;
 
         const ZOOM_PAD = 60;
@@ -666,6 +760,8 @@
         }
         displayPins(pins);
         updateCounts(pins);
+        updateFilterBadge();
+        updateMobileClearBtn();
     }
 
     function hasTerm(pin, taxonomy, termName) {
@@ -925,7 +1021,13 @@
         const imagesSection = document.getElementById('project-images');
         if (imagesSection) {
             if (pin.featured_image) {
-                imagesSection.innerHTML = `<img src="${pin.featured_image}" alt="${pin.title}" class="project-image" loading="lazy">`;
+                const img = document.createElement('img');
+                img.src       = pin.featured_image;
+                img.alt       = pin.title;
+                img.className = 'project-image';
+                img.loading   = 'lazy';
+                imagesSection.innerHTML = '';
+                imagesSection.appendChild(img);
                 imagesSection.classList.remove('hidden');
             } else {
                 imagesSection.innerHTML = '';
@@ -1119,6 +1221,12 @@
     }
 
     function openProjectPanel(pin) {
+        if (isMobile()) {
+            currentOpenPin = pin;
+            showMobilePinDetail(pin);
+            setSelectedPin(pin.id);
+            return;
+        }
         const panel = document.getElementById('project-panel');
         if (!panel) return;
         currentOpenPin = pin;
@@ -1131,13 +1239,17 @@
     }
 
     function closeProjectPanel() {
+        currentOpenPin = null;
+        setSelectedPin(null);
+        if (isMobile()) {
+            closeMobilePinDetail();
+            return;
+        }
         const panel = document.getElementById('project-panel');
         if (!panel) return;
-        currentOpenPin = null;
         panel.classList.remove('panel-open', 'panel-search-mode', 'panel-pin-from-search');
         panel.setAttribute('aria-hidden', 'true');
         document.documentElement.classList.remove('project-panel-open');
-        setSelectedPin(null);
     }
 
     // Close on X button
@@ -1189,7 +1301,11 @@
             .map(r => r.pin);
 
         displayPins(searchResults);
-        openSearchResults(searchResults, query);
+        if (isMobile()) {
+            showMobileSearchResults(searchResults, query);
+        } else {
+            openSearchResults(searchResults, query);
+        }
     }
 
     // Returns the Levenshtein edit distance between two strings.
@@ -1312,6 +1428,7 @@
     }
 
     function openPinFromSearch(pin) {
+        if (isMobile()) { showMobilePinDetailFromSearch(pin); return; }
         fillPinDetails(pin);
         const panel = document.getElementById('project-panel');
         if (!panel) return;
@@ -1326,5 +1443,595 @@
         openSearchResults(searchResults, query);
     }
 
+    // ── Mobile helpers ───────────────────────────────────────────────────────
+
+    function isMobile() {
+        return window.innerWidth <= 768;
+    }
+
+    function updateFilterBadge() {
+        const badge = document.getElementById('ks-fab-badge');
+        if (!badge) return;
+        const count = Object.values(activeFilters).filter(v => v !== null).length;
+        if (count > 0) {
+            badge.textContent = String(count);
+            badge.hidden = false;
+        } else {
+            badge.hidden = true;
+        }
+    }
+
+    function updateMobileClearBtn() {
+        if (!isMobile()) return;
+        const btn = document.querySelector('.ks-filter-clear-mobile');
+        if (!btn) return;
+        const hasActive = Object.values(activeFilters).some(v => v !== null);
+        btn.classList.toggle('is-visible', hasActive);
+    }
+
+    function setupMobile() {
+        const fab      = document.getElementById('ks-filter-fab');
+        const panel    = document.getElementById('ks-filter-panel');
+        const overlay  = document.getElementById('ks-overlay');
+        const sheet    = document.getElementById('ks-bottom-sheet');
+        if (!fab || !panel || !overlay) return;
+
+        const closeBtn = panel.querySelector('.ks-filter-close');
+
+        function restoreToFilterPanel() {
+            if (!panel.dataset.originalContent) return;
+            panel.innerHTML = panel.dataset.originalContent;
+            delete panel.dataset.originalContent;
+            delete panel.dataset.searchContent;
+            reinitFilterPanel();
+            setSelectedPin(null);
+            currentOpenPin = null;
+        }
+
+        function openFilterPanel() {
+            restoreToFilterPanel();   // always show main filters, not stale pin/search view
+            panel.classList.add('is-open');
+            overlay.classList.add('is-active');
+            panel.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeFilterPanel() {
+            panel.classList.remove('is-open');
+            panel.setAttribute('aria-hidden', 'true');
+            if (!sheet?.classList.contains('is-open')) {
+                overlay.classList.remove('is-active');
+            }
+        }
+
+        const hamburgerBtn = document.getElementById('ks-hamburger-btn');
+        hamburgerBtn?.addEventListener('click', openFilterPanel);
+
+        fab.addEventListener('click', openFilterPanel);
+        closeBtn?.addEventListener('click', closeFilterPanel);
+
+        // Delegated — survives innerHTML replacement (pin detail / search results)
+        document.addEventListener('click', function (e) {
+            if (!isMobile()) return;
+            if (e.target.closest('.ks-filter-apply')) {
+                closeFilterPanel();
+            } else if (e.target.closest('.ks-filter-clear-mobile')) {
+                clearAllFilters();
+                closeFilterPanel();
+            }
+        });
+
+        overlay.addEventListener('click', function () {
+            closeFilterPanel();
+            closeBottomSheet();
+        });
+
+        // Swipe-down on filter panel to dismiss
+        let startY = 0;
+        panel.addEventListener('touchstart', function (e) {
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+        panel.addEventListener('touchend', function (e) {
+            if (e.changedTouches[0].clientY - startY > 60) closeFilterPanel();
+        }, { passive: true });
+
+        // Swipe-down on bottom sheet to dismiss
+        if (sheet) {
+            let sheetStartY = 0;
+            sheet.addEventListener('touchstart', function (e) {
+                sheetStartY = e.touches[0].clientY;
+            }, { passive: true });
+            sheet.addEventListener('touchend', function (e) {
+                if (e.changedTouches[0].clientY - sheetStartY > 60) closeBottomSheet();
+            }, { passive: true });
+        }
+
+        // Delegated touchend on map — eliminates iOS 300ms click delay on pins
+        document.getElementById('map')?.addEventListener('touchend', function (e) {
+            const pinEl = e.target.closest('.map-pin');
+            if (pinEl) {
+                e.preventDefault();
+                pinEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            }
+        }, { passive: false });
+    }
+
+    // ── Issue 5: One-at-a-time accordion on mobile ───────────────────────────
+    function setupMobileAccordion() {
+        if (!isMobile()) return;
+        document.querySelectorAll('.collapsible-header').forEach(function (header) {
+            header.addEventListener('click', function () {
+                const group = header.closest('.collapsible-group');
+                // After the existing toggle listener fires, check if this group is now open
+                requestAnimationFrame(function () {
+                    if (!group.classList.contains('is-collapsed')) {
+                        // Close all other groups
+                        document.querySelectorAll('.collapsible-group').forEach(function (other) {
+                            if (other !== group && !other.classList.contains('is-collapsed')) {
+                                other.classList.add('is-collapsed');
+                                const otherHeader = other.querySelector('.collapsible-header');
+                                if (otherHeader) otherHeader.setAttribute('aria-expanded', 'false');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    }
+
+    function openBottomSheet(pin) {
+        const sheet   = document.getElementById('ks-bottom-sheet');
+        const inner   = document.getElementById('ks-bottom-sheet-inner');
+        const overlay = document.getElementById('ks-overlay');
+        if (!sheet || !inner) return;
+
+        inner.innerHTML = '';
+
+        const lang = document.documentElement.getAttribute('data-lang') || 'he';
+        const t    = TRANSLATIONS[lang] || TRANSLATIONS.he;
+
+        const getTerms = (taxonomy) => {
+            const terms = pin.taxonomies?.[taxonomy];
+            if (!Array.isArray(terms)) return '';
+            return terms.map(term => {
+                const name = typeof term === 'object' ? term.name : term;
+                return (lang === 'en' && TERM_TRANSLATIONS[name]) ? TERM_TRANSLATIONS[name] : name;
+            }).join(', ');
+        };
+
+        const titleEl = document.createElement('h2');
+        titleEl.className = 'ks-bs-title';
+        titleEl.textContent = pin.title;
+        inner.appendChild(titleEl);
+
+        if (pin.description) {
+            const desc = document.createElement('p');
+            desc.className = 'ks-bs-desc';
+            desc.textContent = pin.description;
+            inner.appendChild(desc);
+        }
+
+        const addMeta = (label, value) => {
+            if (!value) return;
+            const row = document.createElement('div');
+            row.className = 'ks-bs-meta-row';
+            const strong = document.createElement('strong');
+            strong.textContent = label + ' ';
+            const span = document.createElement('span');
+            span.textContent = value;
+            row.appendChild(strong);
+            row.appendChild(span);
+            inner.appendChild(row);
+        };
+
+        addMeta(t.metaLocation, getTerms('geographic_region'));
+        addMeta(t.metaAudience, getTerms('target_audience'));
+        addMeta(t.metaCycle,    getTerms('activity_cycle'));
+        addMeta(t.metaDomain,   getTerms('domains'));
+
+        if (pin.organization) {
+            const orgRow = document.createElement('p');
+            orgRow.className = 'ks-bs-org';
+            const orgLabel = document.createElement('span');
+            orgLabel.className = 'ks-bs-org-label';
+            orgLabel.textContent = t.orgLabel + ' ';
+            const orgName = document.createElement('span');
+            orgName.textContent = pin.organization;
+            orgRow.appendChild(orgLabel);
+            orgRow.appendChild(orgName);
+            inner.appendChild(orgRow);
+        }
+
+        if (pin.website) {
+            const link = document.createElement('a');
+            link.href       = pin.website;
+            link.target     = '_blank';
+            link.rel        = 'noopener noreferrer';
+            link.className  = 'ks-bs-link';
+            link.textContent = t.linkLabel;
+            inner.appendChild(link);
+        }
+
+        sheet.classList.add('is-open');
+        sheet.setAttribute('aria-hidden', 'false');
+        overlay?.classList.add('is-active');
+    }
+
+    function closeBottomSheet() {
+        const sheet   = document.getElementById('ks-bottom-sheet');
+        const overlay = document.getElementById('ks-overlay');
+        const panel   = document.getElementById('ks-filter-panel');
+        if (!sheet) return;
+        sheet.classList.remove('is-open');
+        sheet.setAttribute('aria-hidden', 'true');
+        if (!panel?.classList.contains('is-open')) {
+            overlay?.classList.remove('is-active');
+        }
+    }
+
+    // ── Mobile pin detail ────────────────────────────────────────────────────
+
+    function escapeHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function openMobileDrawer() {
+        const panel   = document.getElementById('ks-filter-panel');
+        const overlay = document.getElementById('ks-overlay');
+        if (!panel) return;
+        panel.classList.add('is-open');
+        overlay?.classList.add('is-active');
+    }
+
+    function showMobilePinDetail(pin) {
+        if (!isMobile()) return;
+        const panel = document.getElementById('ks-filter-panel');
+        if (!panel) return;
+
+        const lang = document.documentElement.getAttribute('data-lang') || 'he';
+        const isEn = lang === 'en';
+        const backLabel  = isEn ? '← Back to filters' : '← חזרה לסינון';
+
+        const name    = escapeHtml(isEn ? (pin.title_en || pin.title) : pin.title);
+        const org     = escapeHtml(isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org);
+        const loc     = escapeHtml(isEn ? (pin.location_en || pin.location) : pin.location);
+        const desc    = escapeHtml(isEn ? (pin.content_en  || pin.content)  : pin.content);
+        const link    = pin.project_link || '';
+        const linkLabel = isEn ? 'Visit project' : 'לאתר הפרויקט';
+
+        const metaParts = [org, loc].filter(Boolean);
+
+        // Only capture the filter panel HTML the first time — don't overwrite with a
+        // previous pin's detail if the user taps another pin without going back first.
+        if (!panel.dataset.originalContent) {
+            panel.dataset.originalContent = panel.innerHTML;
+        }
+
+        panel.innerHTML =
+            '<div class="ks-pin-detail">' +
+                '<button class="ks-pin-back" id="ks-pin-back-btn">' + backLabel + '</button>' +
+                '<h2 class="ks-pin-name">' + name + '</h2>' +
+                (metaParts.length ? '<p class="ks-pin-meta">' + metaParts.join(' · ') + '</p>' : '') +
+                (desc ? '<p class="ks-pin-description">' + desc + '</p>' : '') +
+                (link ? '<a href="' + escapeHtml(link) + '" class="ks-pin-link" target="_blank" rel="noopener">' + linkLabel + '</a>' : '') +
+            '</div>';
+
+        openMobileDrawer();
+        document.getElementById('ks-pin-back-btn')?.addEventListener('click', closeMobilePinDetail);
+    }
+
+    function closeMobilePinDetail() {
+        if (!isMobile()) return;
+        const panel = document.getElementById('ks-filter-panel');
+        if (!panel || !panel.dataset.originalContent) return;
+        panel.innerHTML = panel.dataset.originalContent;
+        delete panel.dataset.originalContent;
+        reinitFilterPanel();
+        setSelectedPin(null);
+        currentOpenPin = null;
+        // Keep the drawer open — user is back at the filter panel
+    }
+
+    function syncRadioButtonsToActiveFilters() {
+        document.querySelectorAll('.filter-options-grid input[type="radio"]').forEach(function (input) {
+            const filterType = input.dataset.filter;
+            const term       = input.dataset.term;
+            if (filterType && term) {
+                input.checked = (activeFilters[filterType] === term);
+            }
+        });
+    }
+
+    function reinitFilterPanel() {
+        // Re-attach filter radio listeners (destroyed when innerHTML was replaced)
+        setupFilters();
+
+        // Re-apply checked state — innerHTML round-trips lose the .checked property
+        syncRadioButtonsToActiveFilters();
+
+        // Re-attach collapsible header listeners
+        document.querySelectorAll('.collapsible-header').forEach(function (header) {
+            function toggle() {
+                const group = header.closest('.collapsible-group');
+                const isCollapsed = group.classList.toggle('is-collapsed');
+                header.setAttribute('aria-expanded', String(!isCollapsed));
+            }
+            header.addEventListener('click', toggle);
+            header.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+            });
+        });
+
+        // Re-attach one-at-a-time accordion (Issue 5)
+        setupMobileAccordion();
+
+        // Re-sync the clear button state
+        updateMobileClearBtn();
+    }
+
+    // ── Mobile search results ────────────────────────────────────────────────
+
+    function showMobileSearchResults(results, query) {
+        if (!isMobile()) return;
+        const panel = document.getElementById('ks-filter-panel');
+        if (!panel) return;
+
+        const lang  = document.documentElement.getAttribute('data-lang') || 'he';
+        const isEn  = lang === 'en';
+        const backLabel = isEn ? '← Back to filters' : '← חזרה לסינון';
+        const title     = isEn
+            ? 'Search: "' + query + '" (' + results.length + ')'
+            : 'חיפוש: "' + query + '" (' + results.length + ')';
+        const emptyMsg  = isEn ? 'No results found' : 'לא נמצאו תוצאות';
+
+        panel.dataset.originalContent = panel.innerHTML;
+
+        let html =
+            '<div class="ks-search-results">' +
+            '<button class="ks-pin-back" id="ks-search-back-btn">' + escapeHtml(backLabel) + '</button>' +
+            '<p class="ks-search-results-title">' + escapeHtml(title) + '</p>';
+
+        if (results.length === 0) {
+            html += '<p class="ks-search-empty">' + escapeHtml(emptyMsg) + '</p>';
+        } else {
+            html += '<ul class="ks-search-results-list">';
+            results.forEach(function (pin) {
+                const displayTitle = (isEn && pin.title_en)   ? pin.title_en   : pin.title;
+                const displayBody  = (isEn && pin.content_en) ? pin.content_en : pin.content;
+                const excerpt      = getExcerpt(displayBody || '', query);
+                html +=
+                    '<li class="ks-search-result-item" data-pin-id="' + escapeHtml(String(pin.id)) + '">' +
+                    '<button class="ks-search-result-title">' + escapeHtml(displayTitle) + '</button>' +
+                    (displayBody ? '<p class="ks-search-result-excerpt">' + escapeHtml(excerpt) + '</p>' : '') +
+                    '</li>';
+            });
+            html += '</ul>';
+        }
+        html += '</div>';
+
+        panel.innerHTML = html;
+        openMobileDrawer();
+        wireSearchResultsPanel(panel);
+    }
+
+    function wireSearchResultsPanel(panel) {
+        panel.querySelector('#ks-search-back-btn')?.addEventListener('click', closeMobileSearchResults);
+        panel.querySelectorAll('.ks-search-result-item').forEach(function (item) {
+            const pinId = Number(item.dataset.pinId);
+            const pin   = allPins.find(function (p) { return p.id === pinId; });
+            if (!pin) return;
+            item.querySelector('.ks-search-result-title')?.addEventListener('click', function () {
+                showMobilePinDetailFromSearch(pin);
+            });
+        });
+    }
+
+    function closeMobileSearchResults() {
+        const panel = document.getElementById('ks-filter-panel');
+        if (!panel || !panel.dataset.originalContent) return;
+        panel.innerHTML = panel.dataset.originalContent;
+        delete panel.dataset.originalContent;
+        searchResults = null;
+        reinitFilterPanel();
+        applyFilters();
+    }
+
+    function showMobilePinDetailFromSearch(pin) {
+        if (!isMobile()) return;
+        const panel = document.getElementById('ks-filter-panel');
+        if (!panel) return;
+
+        const lang  = document.documentElement.getAttribute('data-lang') || 'he';
+        const isEn  = lang === 'en';
+        const backLabel = isEn ? '← Back to results' : '← חזרה לתוצאות';
+        const name      = escapeHtml(isEn ? (pin.title_en || pin.title) : pin.title);
+        const org       = escapeHtml(isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org);
+        const loc       = escapeHtml(isEn ? (pin.location_en || pin.location) : pin.location);
+        const desc      = escapeHtml(isEn ? (pin.content_en || pin.content) : pin.content);
+        const link      = pin.project_link || '';
+        const linkLabel = isEn ? 'Visit project' : 'לאתר הפרויקט';
+        const metaParts = [org, loc].filter(Boolean);
+
+        // Stash the search results HTML so the back button can restore it
+        panel.dataset.searchContent = panel.innerHTML;
+
+        panel.innerHTML =
+            '<div class="ks-pin-detail">' +
+            '<button class="ks-pin-back" id="ks-pin-back-btn">' + backLabel + '</button>' +
+            '<h2 class="ks-pin-name">' + name + '</h2>' +
+            (metaParts.length ? '<p class="ks-pin-meta">' + metaParts.join(' · ') + '</p>' : '') +
+            (desc ? '<p class="ks-pin-description">' + desc + '</p>' : '') +
+            (link ? '<a href="' + escapeHtml(link) + '" class="ks-pin-link" target="_blank" rel="noopener">' + linkLabel + '</a>' : '') +
+            '</div>';
+
+        document.getElementById('ks-pin-back-btn')?.addEventListener('click', function () {
+            panel.innerHTML = panel.dataset.searchContent;
+            delete panel.dataset.searchContent;
+            wireSearchResultsPanel(panel);
+        });
+
+        setSelectedPin(pin.id);
+        currentOpenPin = pin;
+    }
+
+    // ── Mobile touch pan ─────────────────────────────────────────────────────
+    // Lets the user drag the map to see different parts of Israel on small screens.
+    // Uses direct viewBox mutation so it composes cleanly with the CSS-transform
+    // region zoom (which resets the viewBox via zoomToRegion before applying).
+
+    function setupTouchPan(svg) {
+        if (!svg) return;
+
+        // ── Shared helpers ────────────────────────────────────────────────────
+
+        function snapVb() {
+            const vb = svg.viewBox.baseVal;
+            return { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
+        }
+
+        // With xMidYMid slice the binding axis fills the container exactly.
+        // The pixel→SVG ratio is the MIN of the two per-axis ratios.
+        function p2s(vb, rect) {
+            return Math.min(vb.w / rect.width, vb.h / rect.height);
+        }
+
+        // Screen coords (relative to SVG element) → SVG content coords
+        function screenToSVG(sx, sy, vb, rect) {
+            const ratio = p2s(vb, rect);
+            return {
+                x: (sx - rect.width  / 2) * ratio + (vb.x + vb.w / 2),
+                y: (sy - rect.height / 2) * ratio + (vb.y + vb.h / 2),
+            };
+        }
+
+        function pinchDist(e) {
+            return Math.hypot(
+                e.touches[1].clientX - e.touches[0].clientX,
+                e.touches[1].clientY - e.touches[0].clientY
+            );
+        }
+
+        // Clamp viewBox so xMidYMid never shows blank background
+        function clampedVb(x, y, w, h, rect) {
+            const ratio    = Math.min(w / rect.width, h / rect.height);
+            const visibleW = rect.width  * ratio;
+            const visibleH = rect.height * ratio;
+            const halfW    = (w - visibleW) / 2;
+            const halfH    = (h - visibleH) / 2;
+            return {
+                x: Math.max(-halfW, Math.min(halfW, x)),
+                y: Math.max(-halfH, Math.min(halfH, y)),
+                w, h,
+            };
+        }
+
+        function applyVb(c) {
+            const vb   = svg.viewBox.baseVal;
+            vb.x       = c.x;
+            vb.y       = c.y;
+            vb.width   = c.w;
+            vb.height  = c.h;
+        }
+
+        // ── State ─────────────────────────────────────────────────────────────
+
+        let panStartX  = 0;
+        let panStartY  = 0;
+        let panStartVb = null;
+
+        let pinchStartDist  = 0;
+        let pinchStartVb    = null;
+        let pinchFocus      = null;   // SVG coords of pinch midpoint at gesture start
+
+        const MIN_ZOOM = 1;           // 1× = full map visible (original viewBox)
+        const MAX_ZOOM = 5;           // 5× maximum zoom in
+
+        // ── Listeners ─────────────────────────────────────────────────────────
+
+        svg.addEventListener('touchstart', function (e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();   // block browser pinch-zoom
+
+                pinchStartDist = pinchDist(e);
+                pinchStartVb   = snapVb();
+                panStartVb     = null;   // cancel any active pan
+
+                const rect  = svg.getBoundingClientRect();
+                const midX  = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                const midY  = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                pinchFocus  = screenToSVG(midX, midY, pinchStartVb, rect);
+
+            } else if (e.touches.length === 1) {
+                if (e.target.closest('.map-pin, .clickable-region, [id$="_click_pad"]')) return;
+                if (activeFilters.geographic) return;
+
+                panStartX  = e.touches[0].clientX;
+                panStartY  = e.touches[0].clientY;
+                panStartVb = snapVb();
+            }
+        }, { passive: false });
+
+        svg.addEventListener('touchmove', function (e) {
+            e.preventDefault();
+
+            if (e.touches.length === 2 && pinchStartVb) {
+                // ── Pinch zoom ────────────────────────────────────────────────
+                const rawScale = pinchDist(e) / pinchStartDist;
+                const origW    = svgVbWidth;
+                const origH    = svgVbHeight;
+
+                // Clamp to allowed zoom range
+                const clampedW = Math.max(origW / MAX_ZOOM, Math.min(origW / MIN_ZOOM, pinchStartVb.w / rawScale));
+                const clampedH = pinchStartVb.h * (clampedW / pinchStartVb.w);
+                const s        = pinchStartVb.w / clampedW;   // effective scale
+
+                // Zoom around the focus point: newX = focusX*(1-1/s) + startX/s
+                const newX = pinchFocus.x * (1 - 1 / s) + pinchStartVb.x / s;
+                const newY = pinchFocus.y * (1 - 1 / s) + pinchStartVb.y / s;
+
+                const rect = svg.getBoundingClientRect();
+                applyVb(clampedVb(newX, newY, clampedW, clampedH, rect));
+
+            } else if (e.touches.length === 1 && panStartVb) {
+                // ── Single-finger pan ─────────────────────────────────────────
+                if (activeFilters.geographic) { panStartVb = null; return; }
+
+                const dx     = e.touches[0].clientX - panStartX;
+                const dy     = e.touches[0].clientY - panStartY;
+                const rect   = svg.getBoundingClientRect();
+                const ratio  = p2s(panStartVb, rect);
+
+                applyVb(clampedVb(
+                    panStartVb.x - dx * ratio,
+                    panStartVb.y - dy * ratio,
+                    panStartVb.w,
+                    panStartVb.h,
+                    rect
+                ));
+            }
+        }, { passive: false });
+
+        svg.addEventListener('touchend', function (e) {
+            if (e.touches.length < 2) {
+                pinchStartVb = null;
+                pinchFocus   = null;
+            }
+            if (e.touches.length === 0) {
+                panStartVb = null;
+            }
+            // Finger lifted from pinch → resume pan from current position
+            if (e.touches.length === 1 && !panStartVb) {
+                if (e.target.closest('.map-pin, .clickable-region, [id$="_click_pad"]')) return;
+                panStartX  = e.touches[0].clientX;
+                panStartY  = e.touches[0].clientY;
+                panStartVb = snapVb();
+            }
+        }, { passive: true });
+    }
+
 
 })();
+

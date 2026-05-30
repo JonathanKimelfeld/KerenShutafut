@@ -1,0 +1,195 @@
+/**
+ * Mobile overrides — self-contained stacked layout for ≤ 768 px.
+ * Loaded after map.css. Overrides the desktop fixed-position layout
+ * entirely on mobile. Desktop (> 768 px) is completely untouched.
+ *
+ * Relies on NO local map.css edits — safe to deploy on the live server
+ * alongside only functions.php (updated) and this file + mobile-map.js.
+ */
+
+/* Hide the injected JS toggle on desktop */
+#mobile-view-toggle {
+  display: none;
+}
+
+/* ─────────────────────────────────────────────
+   Mobile layout (≤ 768px)
+   All rules use !important to beat map.css's
+   desktop fixed/absolute positioning rules.
+───────────────────────────────────────────── */
+@media screen and (max-width: 768px) {
+
+  /* ── Page wrapper: flex column, full viewport height ── */
+  .map-page {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100svh !important;          /* small-viewport height avoids iOS toolbar jump */
+    width: 100vw !important;
+    overflow: hidden !important;
+    position: relative !important;      /* take out of any fixed-stacking context */
+    direction: rtl;
+  }
+
+  /* ── View toggle bar ── */
+  #mobile-view-toggle {
+    display: flex;
+    flex-shrink: 0;
+    padding: 8px;
+    background: var(--panel-bg, #fff4e3);
+    border-bottom: 2px solid var(--ink, #2b4a45);
+    direction: rtl;
+    box-sizing: border-box;
+    z-index: 10;
+  }
+
+  #mobile-view-toggle button {
+    flex: 1;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 2px solid var(--ink, #2b4a45);
+    background: transparent;
+    color: var(--ink, #2b4a45);
+    font-family: var(--font-main, 'Open Sans Hebrew', Arial, sans-serif);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1.2;
+  }
+
+  /*
+   * RTL flex row: first-child is visually on the RIGHT (מפה),
+   * last-child is on the LEFT (רשימה).
+   */
+  #mobile-view-toggle button:first-child {
+    border-radius: 0 8px 8px 0;
+    border-left: none;                  /* prevent doubled shared border */
+  }
+
+  #mobile-view-toggle button:last-child {
+    border-radius: 8px 0 0 8px;
+  }
+
+  #mobile-view-toggle button.active {
+    background: var(--ink, #2b4a45);
+    color: var(--panel-bg, #fff4e3);
+  }
+
+  /* ── Map container: top half, out of fixed flow ── */
+  #map-container {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    height: 50svh !important;
+    flex: 0 0 50svh !important;
+    overflow: hidden !important;
+    z-index: 1 !important;
+    touch-action: none !important;
+    background: var(--panel-bg, #fff4e3);
+  }
+
+  /* SVG fills the map half */
+  #map,
+  #map svg {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    touch-action: none !important;
+  }
+
+  /* English: map stays full-width on mobile regardless of panel side */
+  html[data-lang="en"] #map-container {
+    left: auto !important;
+    width: 100% !important;
+  }
+
+  /* ── Filter sidebar: bottom half, always visible, scrollable ── */
+  .filter-panel,
+  #ks-filter-panel {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;          /* allow flex shrink below content height */
+    height: 0 !important;              /* height is driven by flex, not content */
+    max-height: 45vh !important;       /* cap so map stays visible in map view */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    border-top: 2px solid var(--ink, #2b4a45) !important;
+    border-right: none !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;        /* cancel any translateX/Y from desktop rules */
+    transition: none !important;
+    z-index: auto !important;
+    direction: rtl;
+    box-sizing: border-box !important;
+  }
+
+  /* Tighter top padding inside the sidebar on mobile */
+  .filter-panel-inner {
+    padding-top: 12px !important;
+  }
+
+  /* ── List view: map hidden, sidebar takes full height ── */
+  .map-page.list-view #map-container {
+    display: none !important;
+    flex: none !important;
+  }
+
+  .map-page.list-view .filter-panel,
+  .map-page.list-view #ks-filter-panel {
+    max-height: none !important;
+    height: auto !important;
+    flex: 1 1 auto !important;
+  }
+
+  /* ── Desktop-only elements: hide on mobile ── */
+  .map-logo          { display: none !important; }
+  #map-tooltip       { display: none !important; }
+  .ks-filter-fab     { display: none !important; }
+  .ks-filter-close   { display: none !important; }
+  .ks-filter-footer  { display: none !important; }
+  .ks-bottom-sheet   { display: none !important; }
+  .ks-overlay        { display: none !important; }
+  #project-panel     { display: none !important; }
+  .panel-description { display: none !important; } /* saves vertical space */
+
+  /* ── Language switcher: fixed in top corner over the map ── */
+  .lang-switcher {
+    position: fixed !important;
+    top: 8px !important;
+    right: 8px !important;
+    left: auto !important;
+    z-index: 20 !important;
+    transition: none !important;
+  }
+
+  html[data-lang="en"] .lang-switcher {
+    right: auto !important;
+    left: 8px !important;
+  }
+
+  /* ── Touch targets: accordion headers ≥ 44 px ── */
+  .collapsible-header {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  /* ── Touch targets: filter option rows ≥ 44 px ── */
+  .filter-option {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+}
