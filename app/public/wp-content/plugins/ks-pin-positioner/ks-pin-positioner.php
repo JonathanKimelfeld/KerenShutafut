@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+
 class KS_Pin_Positioner {
     
     public function __construct() {

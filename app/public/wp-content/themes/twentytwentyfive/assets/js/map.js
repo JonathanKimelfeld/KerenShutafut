@@ -52,6 +52,7 @@
             fabLabel:             'סינון',
             fabAriaLabel:         'פתח סינון',
             showResults:          'הצג תוצאות',
+            scrollHint:           'ניתן לגלול שמאלה וימינה לצפייה במפה המלאה',
         },
         en: {
             panelTitle:           'Partnership Map',
@@ -87,6 +88,7 @@
             fabLabel:             'Filter',
             fabAriaLabel:         'Open filters',
             showResults:          'Show results',
+            scrollHint:           'Scroll left and right to view the full map',
         },
     };
 
@@ -169,6 +171,7 @@
                 freezeEls.forEach(el => { el.style.transition = ''; });
             });
         });
+        showScrollHint();
     }
 
     function applyLanguage() {
@@ -304,7 +307,8 @@
         domains:    null,
     };
 
-    let searchResults = null; // null = no active search, array = current results
+    let searchResults       = null; // null = no active search, array = current results
+    let currentZoomedRegion = null; // tracks zoom-only state, independent of the filter
 
     let svgVbWidth  = 0;
     let svgVbHeight = 0;
@@ -325,6 +329,7 @@
         setupSearch();
         setupMobile();
         setupMobileAccordion();
+        showScrollHint();
     });
 
     // ── Map init ─────────────────────────────────────────────────────────────
@@ -643,10 +648,16 @@
                 const regionName = this.getAttribute('data-region');
                 if (!regionName) return;
 
-                if (activeFilters.geographic === regionName) {
-                    setGeoFilter(null);
+                // Clicking a region only zooms — it does not filter pins.
+                // All pins remain visible regardless of which region is zoomed.
+                if (currentZoomedRegion === regionName) {
+                    currentZoomedRegion = null;
+                    syncMapRegionSelection(null);
+                    zoomToRegion(null);
                 } else {
-                    setGeoFilter(regionName);
+                    currentZoomedRegion = regionName;
+                    syncMapRegionSelection(regionName);
+                    zoomToRegion(regionName);
                 }
             });
         });
@@ -735,6 +746,7 @@
         if (searchInput) searchInput.value = '';
         searchResults = null;
         document.querySelectorAll('.filter-options-grid input[type="radio"]').forEach(i => i.checked = false);
+        currentZoomedRegion = null;
         syncMapRegionSelection(null);
         zoomToRegion(null);
         closeProjectPanel();
@@ -1443,6 +1455,27 @@
         openSearchResults(searchResults, query);
     }
 
+    // ── Mobile scroll hint toast ─────────────────────────────────────────────
+
+    const scrollHintShown = { he: false, en: false };
+
+    function showScrollHint() {
+        if (!isMobile()) return;
+        const lang = currentLang || 'he';
+        if (scrollHintShown[lang]) return;
+        scrollHintShown[lang] = true;
+        const toast = document.getElementById('ks-scroll-hint');
+        if (!toast) return;
+        toast.textContent = (TRANSLATIONS[lang] || TRANSLATIONS.he).scrollHint;
+        toast.classList.remove('is-visible');
+        setTimeout(function () {
+            toast.classList.add('is-visible');
+            setTimeout(function () {
+                toast.classList.remove('is-visible');
+            }, 3500);
+        }, 800);
+    }
+
     // ── Mobile helpers ───────────────────────────────────────────────────────
 
     function isMobile() {
@@ -1715,6 +1748,7 @@
                 '<button class="ks-pin-back" id="ks-pin-back-btn">' + backLabel + '</button>' +
                 '<h2 class="ks-pin-name">' + name + '</h2>' +
                 (metaParts.length ? '<p class="ks-pin-meta">' + metaParts.join(' · ') + '</p>' : '') +
+                (pin.featured_image ? '<img class="ks-pin-image" src="' + escapeHtml(pin.featured_image) + '" alt="' + name + '" loading="lazy">' : '') +
                 (desc ? '<p class="ks-pin-description">' + desc + '</p>' : '') +
                 (link ? '<a href="' + escapeHtml(link) + '" class="ks-pin-link" target="_blank" rel="noopener">' + linkLabel + '</a>' : '') +
             '</div>';
@@ -1863,6 +1897,7 @@
             '<button class="ks-pin-back" id="ks-pin-back-btn">' + backLabel + '</button>' +
             '<h2 class="ks-pin-name">' + name + '</h2>' +
             (metaParts.length ? '<p class="ks-pin-meta">' + metaParts.join(' · ') + '</p>' : '') +
+            (pin.featured_image ? '<img class="ks-pin-image" src="' + escapeHtml(pin.featured_image) + '" alt="' + name + '" loading="lazy">' : '') +
             (desc ? '<p class="ks-pin-description">' + desc + '</p>' : '') +
             (link ? '<a href="' + escapeHtml(link) + '" class="ks-pin-link" target="_blank" rel="noopener">' + linkLabel + '</a>' : '') +
             '</div>';

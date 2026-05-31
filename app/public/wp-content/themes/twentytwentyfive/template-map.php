@@ -32,6 +32,9 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
         </button>
     </div>
 
+    <!-- Mobile scroll hint toast -->
+    <div id="ks-scroll-hint" aria-hidden="true" aria-live="polite"></div>
+
     <!-- Full-screen map (underlies the panel) -->
     <div id="map-container" aria-hidden="true">
         <div id="map"></div>

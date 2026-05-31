@@ -512,6 +512,37 @@ body {
   opacity: 1;
 }
 
+/* ── Mobile scroll hint toast ── */
+#ks-scroll-hint {
+  display: none;
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--panel-bg);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 500;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  #ks-scroll-hint {
+    display: block;
+  }
+}
+
+#ks-scroll-hint.is-visible {
+  opacity: 1;
+}
+
 /* ── Puzzle markers ── */
 #puzzle-markers {
   position: absolute;
@@ -2123,6 +2154,7 @@ html[data-lang="en"] .related-project-name {
     font-weight: 600;
     cursor: pointer;
     padding: 4px 0 12px;
+    margin-inline-start: 6px;
     font-family: inherit;
   }
 
@@ -2139,6 +2171,14 @@ html[data-lang="en"] .related-project-name {
     color: var(--ink, #2b4a45);
     opacity: 0.75;
     margin: 0 0 12px;
+  }
+
+  .ks-pin-image {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    margin: 0 0 14px;
+    display: block;
   }
 
   .ks-pin-description {
