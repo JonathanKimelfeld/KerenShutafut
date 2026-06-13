@@ -42,8 +42,8 @@ SYSTEM_PROMPT = (
     "You are a professional Arabic translator. Translate Hebrew text into Modern Standard Arabic "
     "(fusha) with a Levantine/Palestinian register — formal MSA but using lexical choices familiar "
     "to Palestinian Arabic speakers, not Gulf dialect. Return ONLY a valid JSON object with exactly "
-    "these keys: title_ar, description_ar, operating_org_ar. No preamble, no markdown fences, no "
-    "explanation. If a field is empty, return an empty string."
+    "these keys: title_ar, description_ar, operating_org_ar, location_ar. No preamble, no markdown "
+    "fences, no explanation. If a field is empty, return an empty string."
 )
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -77,12 +77,13 @@ def needs_translation(pin, force):
         return True
     return title_ar.strip() == '' or title_ar.strip() == PLACEHOLDER
 
-def translate(client, title_he, desc_he, org_he):
+def translate(client, title_he, desc_he, org_he, location_he):
     user_msg = (
         f"Translate these fields from Hebrew to Arabic:\n"
         f"title: {title_he}\n"
         f"description: {desc_he or ''}\n"
-        f"operating_org: {org_he or ''}"
+        f"operating_org: {org_he or ''}\n"
+        f"location: {location_he or ''}"
     )
     response = client.messages.create(
         model='claude-opus-4-5',
@@ -156,11 +157,12 @@ def main():
     start_time = time.time()
 
     for i, pin in enumerate(to_translate, 1):
-        pin_id    = pin['id']
-        title_he  = pin.get('title', {}).get('rendered', '') or ''
-        meta      = pin.get('meta', {})
-        desc_he   = meta.get('description', '') or pin.get('content', {}).get('rendered', '') or ''
-        org_he    = meta.get('operating_org', '') or ''
+        pin_id      = pin['id']
+        title_he    = pin.get('title', {}).get('rendered', '') or ''
+        meta        = pin.get('meta', {})
+        desc_he     = meta.get('description', '') or pin.get('content', {}).get('rendered', '') or ''
+        org_he      = meta.get('operating_org', '') or ''
+        location_he = meta.get('location', '') or ''
 
         # Strip HTML from description if any
         desc_he = re.sub(r'<[^>]+>', '', desc_he).strip()
@@ -171,21 +173,23 @@ def main():
         eta       = f'  ETA ~{int(remaining)}s' if remaining else ''
 
         print(f'[{i}/{total}] Pin {pin_id} — {title_he}{eta}', flush=True)
-        print(f'  desc ({len(desc_he)} chars), org: "{org_he or "(none)"}"', flush=True)
+        print(f'  desc ({len(desc_he)} chars), org: "{org_he or "(none)"}", loc: "{location_he or "(none)"}"', flush=True)
 
         try:
             t0 = time.time()
-            translations = translate(client, title_he, desc_he, org_he)
+            translations = translate(client, title_he, desc_he, org_he, location_he)
             api_ms = int((time.time() - t0) * 1000)
 
-            title_ar = translations.get('title_ar', '')
-            desc_ar  = translations.get('description_ar', '')
-            org_ar   = translations.get('operating_org_ar', '')
+            title_ar    = translations.get('title_ar', '')
+            desc_ar     = translations.get('description_ar', '')
+            org_ar      = translations.get('operating_org_ar', '')
+            location_ar = translations.get('location_ar', '')
 
             print(f'  ✓ translated in {api_ms}ms', flush=True)
             print(f'    title: {title_ar}', flush=True)
             print(f'    desc:  {desc_ar[:100]}{"…" if len(desc_ar) > 100 else ""}', flush=True)
             print(f'    org:   {org_ar or "(empty)"}', flush=True)
+            print(f'    loc:   {location_ar or "(empty)"}', flush=True)
 
             if not args.dry_run:
                 print(f'  → writing to WP…', end=' ', flush=True)
@@ -194,6 +198,7 @@ def main():
                 'title_ar':         title_ar,
                 'description_ar':   desc_ar,
                 'operating_org_ar': org_ar,
+                'location_ar':      location_ar,
             }, dry_run=args.dry_run)
 
             if not args.dry_run:

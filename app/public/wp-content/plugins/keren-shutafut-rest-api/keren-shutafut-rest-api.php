@@ -10,7 +10,19 @@
 add_action('init', function() {
     add_post_type_support('pin', 'custom-fields');
 
-    foreach ( ['title_ar', 'description_ar', 'operating_org_ar'] as $key ) {
+    // Arabic translation targets (writable via REST API)
+    foreach ( ['title_ar', 'description_ar', 'operating_org_ar', 'location_ar'] as $key ) {
+        register_post_meta('pin', $key, [
+            'show_in_rest'  => true,
+            'single'        => true,
+            'type'          => 'string',
+            'default'       => '',
+            'auth_callback' => '__return_true',
+        ]);
+    }
+
+    // Source fields needed by the translation script (readable via REST API)
+    foreach ( ['operating_org', 'location'] as $key ) {
         register_post_meta('pin', $key, [
             'show_in_rest'  => true,
             'single'        => true,
@@ -255,6 +267,7 @@ function keren_shutafut_get_pins() {
             'operating_org_ar' => get_post_meta( $pin->ID, 'operating_org_ar', true ) ?: null,
             'location'         => get_post_meta( $pin->ID, 'location',         true ) ?: null,
             'location_en'      => get_post_meta( $pin->ID, 'location_en',      true ) ?: null,
+            'location_ar'      => get_post_meta( $pin->ID, 'location_ar',      true ) ?: null,
             'featured_image'  => get_the_post_thumbnail_url( $pin->ID, 'large' ) ?: null,
             // Coordinate data: JS GridManager uses latitude/longitude directly.
             // coordinates_dms is the human-readable source field (optional).

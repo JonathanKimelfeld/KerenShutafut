@@ -91,7 +91,7 @@
             scrollHint:           'Scroll left and right to view the full map',
         },
         ar: {
-            panelTitle:           'خريطة الشراكة',
+            panelTitle:           'خريطة كيرن شوتافوت',
             panelDescription:     'أمامك خريطة تُظهر انتشار المبادرات التي تدعمها <strong>كيرن شوتافوت</strong>. تعمل هذه المبادرات على تعزيز المجتمع المشترك وقيم التعايش بين المجموعات المختلفة التي تُشكّل المجتمع الإسرائيلي.<br>تُبيّن المبادرات في عملها تنوّع الأساليب الأصيلة والمثيرة للاهتمام في تعزيز التسامح والمساواة وحياة الشراكة في إسرائيل.',
             searchPlaceholder:    'ابحث عن مشروع...',
             searchAriaLabel:      'البحث في المشاريع',
@@ -1132,7 +1132,8 @@
                              isEn ? (pin.content_en      || pin.content)       : pin.content;
         const displayOrg   = isAr ? (pin.operating_org_ar || pin.operating_org) :
                              isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org;
-        const displayLoc   = isEn ? (pin.location_en    || pin.location)      : pin.location;
+        const displayLoc   = isAr ? (pin.location_ar    || pin.location)      :
+                             isEn ? (pin.location_en    || pin.location)      : pin.location;
 
         panel.querySelector('.project-title-text').textContent = displayTitle;
 
