@@ -514,6 +514,10 @@
             await loadPinSymbols();
             pinSymbolsReady = true;
 
+            // SVG labels are created by fixHebrewLabels() above — translate them
+            // now that the DOM nodes exist, in case a non-Hebrew lang was already set.
+            updateMapLabels();
+
             // If pins already fetched while map was loading, render them now
             if (allPins.length > 0) applyFilters();
 

@@ -8,6 +8,8 @@
 // ── Arabic translation meta fields ────────────────────────────────────────────
 
 add_action('init', function() {
+    add_post_type_support('pin', 'custom-fields');
+
     foreach ( ['title_ar', 'description_ar', 'operating_org_ar'] as $key ) {
         register_post_meta('pin', $key, [
             'show_in_rest'  => true,
