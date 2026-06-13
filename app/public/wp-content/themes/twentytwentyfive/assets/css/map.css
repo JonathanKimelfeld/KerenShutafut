@@ -1331,7 +1331,7 @@ body {
   background: var(--panel-bg);
   border: 2px solid var(--ink);
   border-radius: 20px;
-  padding: 5px 12px;
+  padding: 1px 8px;
   font-family: var(--font-main);
   font-size: 13px;
   font-weight: 600;
@@ -1362,13 +1362,29 @@ body {
 .lang-opt {
   opacity: 0.4;
   transition: opacity 0.15s;
+  padding: 4px 5px;
+  cursor: pointer;
 }
 
 /* Highlight the active language */
 html[data-lang="he"] .lang-opt[data-lang-opt="he"],
-html[data-lang="en"] .lang-opt[data-lang-opt="en"] {
+html[data-lang="en"] .lang-opt[data-lang-opt="en"],
+html[data-lang="ar"] .lang-opt[data-lang-opt="ar"] {
   opacity: 1;
   font-weight: 700;
+}
+
+/* Arabic: same RTL layout as Hebrew; override font to Noto Sans Arabic */
+html[data-lang="ar"] .filter-panel,
+html[data-lang="ar"] .project-panel,
+html[data-lang="ar"] .filter-panel *,
+html[data-lang="ar"] .project-panel *,
+html[data-lang="ar"] .map-search-input,
+html[data-lang="ar"] .map-tooltip,
+html[data-lang="ar"] #ks-bottom-sheet-inner,
+html[data-lang="ar"] .ks-pin-detail,
+html[data-lang="ar"] .ks-search-results {
+  font-family: 'Noto Sans Arabic', 'Segoe UI', Arial, sans-serif;
 }
 
 /* English: just to the right of the left-side panel */

@@ -5,6 +5,95 @@
  * Version: 1.1
  */
 
+// ── Arabic translation meta fields ────────────────────────────────────────────
+
+add_action('init', function() {
+    foreach ( ['title_ar', 'description_ar', 'operating_org_ar'] as $key ) {
+        register_post_meta('pin', $key, [
+            'show_in_rest'  => true,
+            'single'        => true,
+            'type'          => 'string',
+            'default'       => '',
+            'auth_callback' => '__return_true',
+        ]);
+    }
+});
+
+// ── Arabic meta box ───────────────────────────────────────────────────────────
+
+add_action('add_meta_boxes', function() {
+    add_meta_box(
+        'ksm_arabic_translation',
+        'ترجمة عربية / Arabic Translation',
+        'ksm_arabic_meta_box_html',
+        'pin',
+        'normal',
+        'default'
+    );
+});
+
+function ksm_arabic_meta_box_html($post) {
+    wp_nonce_field('ksm_arabic_save', 'ksm_arabic_nonce');
+    $title_ar        = get_post_meta($post->ID, 'title_ar',        true);
+    $description_ar  = get_post_meta($post->ID, 'description_ar',  true);
+    $operating_org_ar = get_post_meta($post->ID, 'operating_org_ar', true);
+    ?>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row">
+                <label for="ksm_title_ar">العنوان بالعربية (Arabic Title)</label>
+            </th>
+            <td>
+                <input type="text" id="ksm_title_ar" name="title_ar"
+                       value="<?php echo esc_attr($title_ar); ?>"
+                       dir="rtl" style="width:100%;font-size:15px;"
+                       placeholder="بحاجة إلى ترجمة">
+            </td>
+        </tr>
+        <tr>
+            <th scope="row">
+                <label for="ksm_description_ar">الوصف بالعربية (Arabic Description)</label>
+            </th>
+            <td>
+                <textarea id="ksm_description_ar" name="description_ar"
+                          rows="6" dir="rtl"
+                          style="width:100%;font-size:14px;"
+                          placeholder="بحاجة إلى ترجمة"><?php echo esc_textarea($description_ar); ?></textarea>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row">
+                <label for="ksm_operating_org_ar">الجهة المشغّلة بالعربية (Arabic Org)</label>
+            </th>
+            <td>
+                <input type="text" id="ksm_operating_org_ar" name="operating_org_ar"
+                       value="<?php echo esc_attr($operating_org_ar); ?>"
+                       dir="rtl" style="width:100%;font-size:15px;"
+                       placeholder="بحاجة إلى ترجمة">
+            </td>
+        </tr>
+    </table>
+    <?php
+}
+
+add_action('save_post', function($post_id) {
+    if (!isset($_POST['ksm_arabic_nonce'])) return;
+    if (!wp_verify_nonce($_POST['ksm_arabic_nonce'], 'ksm_arabic_save')) return;
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (get_post_type($post_id) !== 'pin') return;
+    if (!current_user_can('edit_post', $post_id)) return;
+
+    if (array_key_exists('title_ar', $_POST)) {
+        update_post_meta($post_id, 'title_ar', sanitize_text_field($_POST['title_ar']));
+    }
+    if (array_key_exists('description_ar', $_POST)) {
+        update_post_meta($post_id, 'description_ar', sanitize_textarea_field($_POST['description_ar']));
+    }
+    if (array_key_exists('operating_org_ar', $_POST)) {
+        update_post_meta($post_id, 'operating_org_ar', sanitize_text_field($_POST['operating_org_ar']));
+    }
+});
+
 add_action('rest_api_init', function() {
     register_rest_route('keren-shutafut/v1', '/pins', array(
         'methods' => 'GET',
@@ -154,11 +243,14 @@ function keren_shutafut_get_pins() {
             'id'               => $pin->ID,
             'title'            => $pin->post_title,
             'title_en'         => get_post_meta( $pin->ID, 'title_en',         true ) ?: null,
+            'title_ar'         => get_post_meta( $pin->ID, 'title_ar',         true ) ?: null,
+            'description_ar'   => get_post_meta( $pin->ID, 'description_ar',   true ) ?: null,
             'content'          => wp_strip_all_tags( $pin->post_content ),
             'content_en'       => get_post_meta( $pin->ID, 'content_en',       true ) ?: null,
             'project_link'     => $project_link ?: null,
             'operating_org'    => $operating_org ?: null,
             'operating_org_en' => get_post_meta( $pin->ID, 'operating_org_en', true ) ?: null,
+            'operating_org_ar' => get_post_meta( $pin->ID, 'operating_org_ar', true ) ?: null,
             'location'         => get_post_meta( $pin->ID, 'location',         true ) ?: null,
             'location_en'      => get_post_meta( $pin->ID, 'location_en',      true ) ?: null,
             'featured_image'  => get_the_post_thumbnail_url( $pin->ID, 'large' ) ?: null,

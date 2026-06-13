@@ -9,6 +9,7 @@ get_header();
 wp_enqueue_script('keren-coordinate-utils', get_template_directory_uri() . '/assets/js/coordinate-utils.js', [], filemtime(get_template_directory() . '/assets/js/coordinate-utils.js'), true);
 wp_enqueue_script('keren-map-script', get_template_directory_uri() . '/assets/js/map.js', ['keren-coordinate-utils'], filemtime(get_template_directory() . '/assets/js/map.js'), true);
 wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css/map.css', [], filemtime(get_template_directory() . '/assets/css/map.css'));
+wp_enqueue_style('noto-sans-arabic', 'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap', [], null);
 ?>
 
 <div class="map-page" dir="rtl">
@@ -25,10 +26,12 @@ wp_enqueue_style('keren-map-style',  get_template_directory_uri() . '/assets/css
             </svg>
             <span class="ks-hamburger-label" data-i18n="fabLabel">סינון</span>
         </button>
-        <button id="lang-switcher" class="lang-switcher" aria-label="שפה / Language">
+        <button id="lang-switcher" class="lang-switcher" aria-label="שפה / Language / عربي">
             <span class="lang-opt" data-lang-opt="he">עב</span>
             <span class="lang-sep">|</span>
             <span class="lang-opt" data-lang-opt="en">EN</span>
+            <span class="lang-sep">|</span>
+            <span class="lang-opt" data-lang-opt="ar">عر</span>
         </button>
     </div>
 

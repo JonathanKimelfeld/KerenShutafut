@@ -90,6 +90,42 @@
             showResults:          'Show results',
             scrollHint:           'Scroll left and right to view the full map',
         },
+        ar: {
+            panelTitle:           'خريطة الشراكة',
+            panelDescription:     'أمامك خريطة تُظهر انتشار المبادرات التي تدعمها <strong>كيرن شوتافوت</strong>. تعمل هذه المبادرات على تعزيز المجتمع المشترك وقيم التعايش بين المجموعات المختلفة التي تُشكّل المجتمع الإسرائيلي.<br>تُبيّن المبادرات في عملها تنوّع الأساليب الأصيلة والمثيرة للاهتمام في تعزيز التسامح والمساواة وحياة الشراكة في إسرائيل.',
+            searchPlaceholder:    'ابحث عن مشروع...',
+            searchAriaLabel:      'البحث في المشاريع',
+            searchBtnAriaLabel:   'بحث',
+            filterAudience:       'الجمهور المستهدف',
+            filterLocation:       'الموقع',
+            filterCycle:          'دورة كيرن شوتافوت',
+            filterDomain:         'المجال',
+            filterAudienceGroup:  'اختر الجمهور المستهدف',
+            filterLocationGroup:  'اختر الموقع',
+            filterCycleGroup:     'اختر دورة كيرن شوتافوت',
+            filterDomainGroup:    'اختر المجال',
+            filterPanelAriaLabel: 'لوحة التصفية',
+            clearAll:             'مسح الكل',
+            closeBtnAriaLabel:    'إغلاق',
+            backToResults:        'العودة إلى النتائج',
+            backToResultsAriaLabel: 'العودة إلى نتائج البحث',
+            metaLocation:         'الموقع:',
+            metaAudience:         'الجمهور المستهدف:',
+            metaCycle:            'دورة كيرن شوتافوت:',
+            metaDomain:           'المجال:',
+            orgLabel:             'المنظمة المشغّلة:',
+            linkLabel:            'رابط الموقع',
+            relatedTitle:         'قد يهمك أيضاً:',
+            carouselPrev:         'السابق',
+            carouselNext:         'التالي',
+            carouselDotLabel:     'مبادرة',
+            searchResultsTitle:   'نتائج البحث',
+            noResults:            'لا توجد نتائج',
+            fabLabel:             'تصفية',
+            fabAriaLabel:         'فتح التصفية',
+            showResults:          'عرض النتائج',
+            scrollHint:           'يمكنك التمرير يساراً ويميناً لعرض الخريطة الكاملة',
+        },
     };
 
     const TERM_TRANSLATIONS = {
@@ -131,9 +167,65 @@
         'שפה':                   'Language',
     };
 
+    const TERM_TRANSLATIONS_AR = {
+        // geographic_region
+        'צפון':                  'الشمال',
+        'מרכז':                  'الوسط',
+        'דרום':                  'الجنوب',
+        'ירושלים':               'القدس',
+        'כרמל':                  'الكرمل',
+        'גליל':                  'الجليل',
+        'מ. חיפה':               'منطقة حيفا',
+        'מ. תל אביב':            'منطقة تل أبيب',
+        // activity_cycle
+        'מחזור א':               'الدورة الأولى',
+        'מחזור ב':               'الدورة الثانية',
+        'מחזור ג':               'الدورة الثالثة',
+        'מחזור ד':               'الدورة الرابعة',
+        'מחזור ה':               'الدورة الخامسة',
+        'מחזור ו':               'الدورة السادسة',
+        // target_audience
+        'יהודים וערבים':         'يهود وعرب',
+        'נוער וילדים':           'شباب وأطفال',
+        'קהל מגוון':             'جمهور متنوع',
+        'נשים':                  'نساء',
+        'צעירים וסטודנטים':      'شباب وطلاب',
+        'אנשי מקצוע ופעילים':   'متخصصون وناشطون',
+        'דתיים וחילונים':        'متدينون وعلمانيون',
+        'להט"ב':                 'مجتمع الميم',
+        'מוגבלויות':             'أشخاص ذوو إعاقة',
+        'בני ובנות נוער':        'شباب وأطفال',
+        'הגיל הרך':              'الطفولة المبكرة',
+        'החברה החרדית':          'المجتمع الحريدي',
+        'צרכים מיוחדים':         'ذوو احتياجات خاصة',
+        // domains
+        'אומנות ותרבות':         'فنون وثقافة',
+        'חינוך':                 'تعليم',
+        'טבע וסביבה':            'طبيعة وبيئة',
+        'טבע קיימות וסביבה':     'طبيعة واستدامة وبيئة',
+        'לימוד בין-דתי':         'تعلّم بين الأديان',
+        'מוסיקה':                'موسيقى',
+        'מנהיגות ויזמות':        'قيادة وريادة',
+        'ספורט':                 'رياضة',
+        'קהילה ורווחה':          'مجتمع ورفاه',
+        'שפה':                   'لغة',
+        'דיאלוג ושיח':           'حوار ونقاش',
+        'השכלה גבוהה':           'تعليم عالٍ',
+        'קבוצות מנהיגות':        'مجموعات قيادية',
+    };
+
     // Hebrew display overrides (label_overrides from PHP must be mirrored here)
     const HE_LABEL_OVERRIDES = {
         'אנשי מקצוע ופעילים': 'אקטיביסטים',
+    };
+
+    const MAP_LABEL_TRANSLATIONS = {
+        'תל אביב':     { en: 'Tel Aviv',       ar: 'تل أبيب' },
+        'חיפה':        { en: 'Haifa',           ar: 'حيفا' },
+        'ירושלים':     { en: 'Jerusalem',       ar: 'القدس' },
+        'באר שבע':     { en: 'Beer Sheva',      ar: 'بئر السبع' },
+        'לוד':         { en: 'Lod',             ar: 'اللد' },
+        'קריית שמונה': { en: 'Kiryat Shmona',  ar: 'كريات شمونة' },
     };
 
     let currentLang     = localStorage.getItem('ks-lang') || 'he';
@@ -148,6 +240,7 @@
 
     function termLabel(hebrewName) {
         if (currentLang === 'en') return TERM_TRANSLATIONS[hebrewName] || hebrewName;
+        if (currentLang === 'ar') return TERM_TRANSLATIONS_AR[hebrewName] || hebrewName;
         return HE_LABEL_OVERRIDES[hebrewName] || hebrewName;
     }
 
@@ -175,15 +268,15 @@
     }
 
     function applyLanguage() {
-        const isHe = currentLang === 'he';
+        const isRtl = currentLang !== 'en';
         const html  = document.documentElement;
         html.setAttribute('data-lang', currentLang);
         html.setAttribute('lang',      currentLang);
-        html.setAttribute('dir',       isHe ? 'rtl' : 'ltr');
+        html.setAttribute('dir',       isRtl ? 'rtl' : 'ltr');
 
         // The filter panel and project panel have inline dir="rtl" which
         // overrides the html-level dir — update them explicitly on lang change.
-        const panelDir = isHe ? 'rtl' : 'ltr';
+        const panelDir = isRtl ? 'rtl' : 'ltr';
         document.querySelector('.filter-panel')?.setAttribute('dir', panelDir);
         document.getElementById('project-panel')?.setAttribute('dir', panelDir);
         document.getElementById('ks-bottom-sheet')?.setAttribute('dir', panelDir);
@@ -233,6 +326,8 @@
             fillPinDetails(currentOpenPin);
         }
 
+        updateMapLabels();
+
         // Re-position immediately so the container has correct bounds before zoom math,
         // then re-zoom in rAF once the browser has applied the layout changes.
         repositionMapContainer();
@@ -240,6 +335,37 @@
             repositionMapContainer();
             if (activeFilters.geographic) {
                 zoomToRegion(activeFilters.geographic);
+            }
+        });
+    }
+
+    function updateMapLabels() {
+        const isEn = currentLang === 'en';
+        const isAr = currentLang === 'ar';
+        document.querySelectorAll('[data-map-label]').forEach(fo => {
+            const key  = fo.dataset.mapLabel;
+            const div  = fo.querySelector('div');
+            if (!div) return;
+            div.innerHTML = '';
+            if (isEn || isAr) {
+                const tr   = MAP_LABEL_TRANSLATIONS[key];
+                const text = tr ? (isEn ? tr.en : tr.ar) : key;
+                const p    = document.createElement('p');
+                p.style.cssText = 'margin:0;padding:0;';
+                p.textContent   = text;
+                div.appendChild(p);
+                div.style.direction  = isAr ? 'rtl' : 'ltr';
+                div.style.fontFamily = isAr ? '"Noto Sans Arabic",sans-serif' : '"Open Sans Hebrew",sans-serif';
+            } else {
+                const lines = JSON.parse(fo.dataset.mapLabelLines || '[]');
+                lines.forEach(line => {
+                    const p = document.createElement('p');
+                    p.style.cssText = 'margin:0;padding:0;';
+                    p.textContent   = line;
+                    div.appendChild(p);
+                });
+                div.style.direction  = 'rtl';
+                div.style.fontFamily = '"Open Sans Hebrew",sans-serif';
             }
         });
     }
@@ -290,7 +416,15 @@
         // Reposition after first paint so panel offsetWidth is available
         requestAnimationFrame(repositionMapContainer);
         document.getElementById('lang-switcher')
-            ?.addEventListener('click', () => setLang(currentLang === 'he' ? 'en' : 'he'));
+            ?.addEventListener('click', (e) => {
+                const opt = e.target.closest('[data-lang-opt]');
+                if (opt) {
+                    setLang(opt.dataset.langOpt);
+                } else {
+                    const next = currentLang === 'he' ? 'en' : currentLang === 'en' ? 'ar' : 'he';
+                    setLang(next);
+                }
+            });
     }
 
     // ── State ────────────────────────────────────────────────────────────────
@@ -413,7 +547,8 @@
             const minY    = Math.min(...ys);
             const maxY    = Math.max(...ys);
 
-            const labelText = tspans.map(ts => ts.textContent).join('');
+            const hebrewLines = tspans.map(ts => ts.textContent.trim());
+            const labelText   = hebrewLines.join(' ');
             const offsets = {
                 'kiriat-shemona-text': { dx: -40, dy: 20 },
                 'חיפה':                { dx:  25, dy:  0 },
@@ -426,6 +561,8 @@
             fo.setAttribute('width', LABEL_W);
             fo.setAttribute('height', maxY - minY + FONT_SIZE + 8);
             if (textEl.id) fo.id = textEl.id;
+            fo.dataset.mapLabel      = labelText;
+            fo.dataset.mapLabelLines = JSON.stringify(hebrewLines);
 
             const div = document.createElement('div');
             div.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
@@ -434,7 +571,7 @@
             tspans.forEach(ts => {
                 const p = document.createElement('p');
                 p.style.cssText = 'margin:0;padding:0;';
-                p.textContent   = ts.textContent;
+                p.textContent   = ts.textContent.trim();
                 div.appendChild(p);
             });
 
@@ -796,19 +933,10 @@
         const filtersApplied = activePins.length < allPins.length;
         const activeIds = filtersApplied ? new Set(activePins.map(p => p.id)) : null;
 
-        // When a geographic region is zoomed in, only render pins for that region —
-        // grey pins from other regions inside the zoomed area are confusing.
-        // For all other filters (cycle, audience, domain) keep the grey-out behaviour
-        // so users can see the full map context.
-        const geoOnly = filtersApplied && activeFilters.geographic &&
-            !activeFilters.cycle && !activeFilters.audience && !activeFilters.domains;
-
         // Inactive pins first in DOM (lower SVG stack), active pins on top
-        const ordered = geoOnly
-            ? activePins
-            : filtersApplied
-                ? [...allPins.filter(p => !activeIds.has(p.id)), ...activePins]
-                : allPins;
+        const ordered = filtersApplied
+            ? [...allPins.filter(p => !activeIds.has(p.id)), ...activePins]
+            : allPins;
 
         ordered.forEach(pin => {
             const isActive = !filtersApplied || activeIds.has(pin.id);
@@ -838,7 +966,8 @@
             g.appendChild(inner);
             g.setAttribute('data-pin-title', pin.title);
             g.addEventListener('mouseenter', e => {
-                const title = (currentLang === 'en' && pin.title_en) ? pin.title_en : pin.title;
+                const title = currentLang === 'ar' ? (pin.title_ar || pin.title) :
+                              currentLang === 'en' ? (pin.title_en || pin.title) : pin.title;
                 pinTooltipShow(e, title);
             });
             g.addEventListener('mousemove', e => pinTooltipMove(e));
@@ -991,11 +1120,15 @@
         const panel = document.getElementById('project-panel');
         if (!panel) return;
 
-        const isEn          = currentLang === 'en';
-        const displayTitle  = (isEn && pin.title_en)         ? pin.title_en         : pin.title;
-        const displayDesc   = (isEn && pin.content_en)       ? pin.content_en       : pin.content;
-        const displayOrg    = (isEn && pin.operating_org_en) ? pin.operating_org_en : pin.operating_org;
-        const displayLoc    = (isEn && pin.location_en)      ? pin.location_en      : pin.location;
+        const isEn = currentLang === 'en';
+        const isAr = currentLang === 'ar';
+        const displayTitle = isAr ? (pin.title_ar       || pin.title)         :
+                             isEn ? (pin.title_en        || pin.title)         : pin.title;
+        const displayDesc  = isAr ? (pin.description_ar || pin.content)       :
+                             isEn ? (pin.content_en      || pin.content)       : pin.content;
+        const displayOrg   = isAr ? (pin.operating_org_ar || pin.operating_org) :
+                             isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org;
+        const displayLoc   = isEn ? (pin.location_en    || pin.location)      : pin.location;
 
         panel.querySelector('.project-title-text').textContent = displayTitle;
 
@@ -1179,7 +1312,8 @@
 
             const name = document.createElement('span');
             name.className   = 'related-project-name';
-            name.textContent = (currentLang === 'en' && relPin.title_en) ? relPin.title_en : relPin.title;
+            name.textContent = currentLang === 'ar' ? (relPin.title_ar || relPin.title) :
+                               currentLang === 'en' ? (relPin.title_en || relPin.title) : relPin.title;
 
             btn.appendChild(icon);
             btn.appendChild(name);
@@ -1415,8 +1549,11 @@
                 li.className = 'search-result-item';
 
                 const isEn         = currentLang === 'en';
-                const displayTitle = (isEn && pin.title_en)   ? pin.title_en   : pin.title;
-                const displayBody  = (isEn && pin.content_en) ? pin.content_en : pin.content;
+                const isAr         = currentLang === 'ar';
+                const displayTitle = isAr ? (pin.title_ar       || pin.title)   :
+                                     isEn ? (pin.title_en        || pin.title)   : pin.title;
+                const displayBody  = isAr ? (pin.description_ar || pin.content) :
+                                     isEn ? (pin.content_en      || pin.content) : pin.content;
 
                 const titleBtn = document.createElement('button');
                 titleBtn.className = 'search-result-title';
@@ -1457,7 +1594,7 @@
 
     // ── Mobile scroll hint toast ─────────────────────────────────────────────
 
-    const scrollHintShown = { he: false, en: false };
+    const scrollHintShown = { he: false, en: false, ar: false };
 
     function showScrollHint() {
         if (!isMobile()) return;
@@ -1726,14 +1863,18 @@
 
         const lang = document.documentElement.getAttribute('data-lang') || 'he';
         const isEn = lang === 'en';
-        const backLabel  = isEn ? '← Back to filters' : '← חזרה לסינון';
+        const isAr = lang === 'ar';
+        const backLabel = isEn ? '← Back to filters' : isAr ? '← العودة إلى التصفية' : '← חזרה לסינון';
 
-        const name    = escapeHtml(isEn ? (pin.title_en || pin.title) : pin.title);
-        const org     = escapeHtml(isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org);
-        const loc     = escapeHtml(isEn ? (pin.location_en || pin.location) : pin.location);
-        const desc    = escapeHtml(isEn ? (pin.content_en  || pin.content)  : pin.content);
+        const name    = escapeHtml(isAr ? (pin.title_ar       || pin.title)         :
+                                   isEn ? (pin.title_en        || pin.title)         : pin.title);
+        const org     = escapeHtml(isAr ? (pin.operating_org_ar || pin.operating_org) :
+                                   isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org);
+        const loc     = escapeHtml(isEn ? (pin.location_en    || pin.location)      : pin.location);
+        const desc    = escapeHtml(isAr ? (pin.description_ar || pin.content)       :
+                                   isEn ? (pin.content_en      || pin.content)       : pin.content);
         const link    = pin.project_link || '';
-        const linkLabel = isEn ? 'Visit project' : 'לאתר הפרויקט';
+        const linkLabel = isEn ? 'Visit project' : isAr ? 'زيارة الموقع' : 'לאתר הפרויקט';
 
         const metaParts = [org, loc].filter(Boolean);
 
@@ -1815,11 +1956,12 @@
 
         const lang  = document.documentElement.getAttribute('data-lang') || 'he';
         const isEn  = lang === 'en';
-        const backLabel = isEn ? '← Back to filters' : '← חזרה לסינון';
-        const title     = isEn
-            ? 'Search: "' + query + '" (' + results.length + ')'
-            : 'חיפוש: "' + query + '" (' + results.length + ')';
-        const emptyMsg  = isEn ? 'No results found' : 'לא נמצאו תוצאות';
+        const isAr  = lang === 'ar';
+        const backLabel = isEn ? '← Back to filters' : isAr ? '← العودة إلى التصفية' : '← חזרה לסינון';
+        const title     = isEn ? 'Search: "' + query + '" (' + results.length + ')' :
+                          isAr ? 'بحث: "' + query + '" (' + results.length + ')' :
+                                 'חיפוש: "' + query + '" (' + results.length + ')';
+        const emptyMsg  = isEn ? 'No results found' : isAr ? 'لا توجد نتائج' : 'לא נמצאו תוצאות';
 
         panel.dataset.originalContent = panel.innerHTML;
 
@@ -1833,8 +1975,10 @@
         } else {
             html += '<ul class="ks-search-results-list">';
             results.forEach(function (pin) {
-                const displayTitle = (isEn && pin.title_en)   ? pin.title_en   : pin.title;
-                const displayBody  = (isEn && pin.content_en) ? pin.content_en : pin.content;
+                const displayTitle = isAr ? (pin.title_ar       || pin.title)   :
+                                     isEn ? (pin.title_en        || pin.title)   : pin.title;
+                const displayBody  = isAr ? (pin.description_ar || pin.content) :
+                                     isEn ? (pin.content_en      || pin.content) : pin.content;
                 const excerpt      = getExcerpt(displayBody || '', query);
                 html +=
                     '<li class="ks-search-result-item" data-pin-id="' + escapeHtml(String(pin.id)) + '">' +
@@ -1880,13 +2024,17 @@
 
         const lang  = document.documentElement.getAttribute('data-lang') || 'he';
         const isEn  = lang === 'en';
-        const backLabel = isEn ? '← Back to results' : '← חזרה לתוצאות';
-        const name      = escapeHtml(isEn ? (pin.title_en || pin.title) : pin.title);
-        const org       = escapeHtml(isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org);
-        const loc       = escapeHtml(isEn ? (pin.location_en || pin.location) : pin.location);
-        const desc      = escapeHtml(isEn ? (pin.content_en || pin.content) : pin.content);
+        const isAr  = lang === 'ar';
+        const backLabel = isEn ? '← Back to results' : isAr ? '← العودة إلى النتائج' : '← חזרה לתוצאות';
+        const name      = escapeHtml(isAr ? (pin.title_ar       || pin.title)         :
+                                     isEn ? (pin.title_en        || pin.title)         : pin.title);
+        const org       = escapeHtml(isAr ? (pin.operating_org_ar || pin.operating_org) :
+                                     isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org);
+        const loc       = escapeHtml(isEn ? (pin.location_en    || pin.location)      : pin.location);
+        const desc      = escapeHtml(isAr ? (pin.description_ar || pin.content)       :
+                                     isEn ? (pin.content_en      || pin.content)       : pin.content);
         const link      = pin.project_link || '';
-        const linkLabel = isEn ? 'Visit project' : 'לאתר הפרויקט';
+        const linkLabel = isEn ? 'Visit project' : isAr ? 'زيارة الموقع' : 'לאתר הפרויקט';
         const metaParts = [org, loc].filter(Boolean);
 
         // Stash the search results HTML so the back button can restore it
