@@ -1688,7 +1688,12 @@
         document.addEventListener('click', function (e) {
             if (!isMobile()) return;
             if (e.target.closest('.ks-filter-apply')) {
-                closeFilterPanel();
+                const searchInput = document.getElementById('map-search');
+                if (searchInput && searchInput.value.trim()) {
+                    runSearch();
+                } else {
+                    closeFilterPanel();
+                }
             } else if (e.target.closest('.ks-filter-clear-mobile')) {
                 clearAllFilters();
                 closeFilterPanel();
