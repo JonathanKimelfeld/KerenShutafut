@@ -48,9 +48,11 @@ add_action('add_meta_boxes', function() {
 
 function ksm_arabic_meta_box_html($post) {
     wp_nonce_field('ksm_arabic_save', 'ksm_arabic_nonce');
-    $title_ar        = get_post_meta($post->ID, 'title_ar',        true);
-    $description_ar  = get_post_meta($post->ID, 'description_ar',  true);
+    $title_ar         = get_post_meta($post->ID, 'title_ar',         true);
+    $description_ar   = get_post_meta($post->ID, 'description_ar',   true);
     $operating_org_ar = get_post_meta($post->ID, 'operating_org_ar', true);
+    $location_ar      = get_post_meta($post->ID, 'location_ar',      true);
+    $location_he      = get_post_meta($post->ID, 'location',         true);
     ?>
     <table class="form-table" role="presentation">
         <tr>
@@ -86,6 +88,20 @@ function ksm_arabic_meta_box_html($post) {
                        placeholder="بحاجة إلى ترجمة">
             </td>
         </tr>
+        <tr>
+            <th scope="row">
+                <label for="ksm_location_ar">الموقع بالعربية (Arabic Location)</label>
+                <?php if ($location_he): ?>
+                    <p style="font-weight:normal;color:#666;margin-top:4px;"><?php echo esc_html($location_he); ?></p>
+                <?php endif; ?>
+            </th>
+            <td>
+                <input type="text" id="ksm_location_ar" name="location_ar"
+                       value="<?php echo esc_attr($location_ar); ?>"
+                       dir="rtl" style="width:100%;font-size:15px;"
+                       placeholder="بحاجة إلى ترجمة">
+            </td>
+        </tr>
     </table>
     <?php
 }
@@ -105,6 +121,9 @@ add_action('save_post', function($post_id) {
     }
     if (array_key_exists('operating_org_ar', $_POST)) {
         update_post_meta($post_id, 'operating_org_ar', sanitize_text_field($_POST['operating_org_ar']));
+    }
+    if (array_key_exists('location_ar', $_POST)) {
+        update_post_meta($post_id, 'location_ar', sanitize_text_field($_POST['location_ar']));
     }
 });
 
