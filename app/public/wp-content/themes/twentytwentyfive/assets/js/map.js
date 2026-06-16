@@ -326,6 +326,18 @@
             fillPinDetails(currentOpenPin);
         }
 
+        // Re-render mobile pin detail when language switches (mirrors desktop logic above)
+        if (currentOpenPin && isMobile()) {
+            const mp = document.getElementById('ks-filter-panel');
+            if (mp?.querySelector('.ks-pin-detail')) {
+                if (mp.dataset.searchContent !== undefined) {
+                    showMobilePinDetailFromSearch(currentOpenPin);
+                } else {
+                    showMobilePinDetail(currentOpenPin);
+                }
+            }
+        }
+
         updateMapLabels();
 
         // Re-position immediately so the container has correct bounds before zoom math,
@@ -1880,7 +1892,8 @@
                                    isEn ? (pin.title_en        || pin.title)         : pin.title);
         const org     = escapeHtml(isAr ? (pin.operating_org_ar || pin.operating_org) :
                                    isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org);
-        const loc     = escapeHtml(isEn ? (pin.location_en    || pin.location)      : pin.location);
+        const loc     = escapeHtml(isAr ? (pin.location_ar                        || '')  :
+                                   isEn ? (pin.location_en    || pin.location)      : pin.location);
         const desc    = escapeHtml(isAr ? (pin.description_ar || pin.content)       :
                                    isEn ? (pin.content_en      || pin.content)       : pin.content);
         const link    = pin.project_link || '';
@@ -2040,15 +2053,18 @@
                                      isEn ? (pin.title_en        || pin.title)         : pin.title);
         const org       = escapeHtml(isAr ? (pin.operating_org_ar || pin.operating_org) :
                                      isEn ? (pin.operating_org_en || pin.operating_org) : pin.operating_org);
-        const loc       = escapeHtml(isEn ? (pin.location_en    || pin.location)      : pin.location);
+        const loc       = escapeHtml(isAr ? (pin.location_ar                        || '')  :
+                                     isEn ? (pin.location_en    || pin.location)      : pin.location);
         const desc      = escapeHtml(isAr ? (pin.description_ar || pin.content)       :
                                      isEn ? (pin.content_en      || pin.content)       : pin.content);
         const link      = pin.project_link || '';
         const linkLabel = isEn ? 'Visit project' : isAr ? 'زيارة الموقع' : 'לאתר הפרויקט';
         const metaParts = [org, loc].filter(Boolean);
 
-        // Stash the search results HTML so the back button can restore it
-        panel.dataset.searchContent = panel.innerHTML;
+        // Stash the search results HTML so the back button can restore it (only on first open)
+        if (!panel.dataset.searchContent) {
+            panel.dataset.searchContent = panel.innerHTML;
+        }
 
         panel.innerHTML =
             '<div class="ks-pin-detail">' +
